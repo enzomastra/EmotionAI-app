@@ -1,0 +1,48 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Expo
+.expo/
+.expo-shared/
+
+# iOS
+ios/
+*.xcworkspace
+*.xcodeproj
+*.xcuserdata
+*.xcuserstate
+*.DS_Store
+
+# Android
+android/
+*.iml
+.gradle/
+local.properties
+
+# Metro
+cache/
+dist/
+
+# Build output
+*.apk
+*.aab
+web-build/
+build/
+
+# Environment
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
