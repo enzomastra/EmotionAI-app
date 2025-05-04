@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
-import { useUploadVideo } from '@/hooks/useUploadVideo'; // Suponiendo que el hook es correcto
+import { useUploadVideo } from '../../hooks/useUploadVideo';
 
 export default function HomeScreen() {
-  const { loading, pickAndUploadVideo } = useUploadVideo();
+  const { pickAndUploadVideo, loading } = useUploadVideo();
 
   return (
     <View style={styles.container}>
