@@ -1,40 +1,69 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { BarChart } from 'react-native-chart-kit';
+
+const screenWidth = Dimensions.get('window').width;
 
 export default function ResultsScreen() {
   const { summary, timeline } = useLocalSearchParams();
 
-  const emotionSummary = summary ? JSON.parse(decodeURIComponent(summary)) : {};
-  const timelineData = timeline ? JSON.parse(decodeURIComponent(timeline)) : [];
+  // Decodificar y procesar los parámetros
+  const parsedSummary = summary ? JSON.parse(summary as string) : null;
+  const parsedTimeline = timeline ? JSON.parse(timeline as string) : null;
+
+  if (!parsedSummary || !parsedTimeline) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>
+          No se pudieron cargar los resultados. Por favor, intenta nuevamente.
+        </Text>
+      </View>
+    );
+  }
+
+  // Datos para gráfico de barras
+  const barChartData = {
+    labels: Object.keys(parsedSummary),
+    datasets: [{ data: Object.values(parsedSummary) }],
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Resultados del análisis</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Resultados de la emoción</Text>
 
-      <Text style={styles.sectionTitle}>Resumen de emociones</Text>
-      {Object.entries(emotionSummary).map(([emotion, count]) => (
-        <View key={emotion} style={styles.summaryItem}>
-          <Text style={styles.emotion}>{emotion}</Text>
-          <Text style={styles.count}>{count}</Text>
-        </View>
-      ))}
+      <Text style={styles.subtitle}>Resumen de emociones</Text>
+      <BarChart
+        data={barChartData}
+        width={screenWidth - 40}
+        height={220}
+        fromZero
+        chartConfig={{
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#ffffff',
+          decimalPlaces: 0,
+          color: (opacity = 1) => `rgba(240, 82, 25, ${opacity})`,
+          labelColor: () => '#000',
+        }}
+        style={styles.chart}
+      />
 
-      <Text style={styles.sectionTitle}>Línea de tiempo</Text>
-      {timelineData.map((entry, index) => (
-        <View key={index} style={styles.timelineItem}>
-          <Text style={styles.time}>{entry.timestamp}</Text>
-          <Text style={styles.emotion}>{entry.emotion}</Text>
-        </View>
-      ))}
+      <Text style={styles.subtitle}>Evolución emocional en el tiempo</Text>
+      <View style={styles.timelineContainer}>
+        {Object.entries(parsedTimeline).map(([time, emotion], index) => (
+          <Text key={index} style={styles.timelineItem}>
+            {time}s: {emotion}
+          </Text>
+        ))}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 16,
+    padding: 20,
     backgroundColor: '#fff',
   },
   title: {
@@ -43,32 +72,26 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  sectionTitle: {
+  subtitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 24,
-    marginBottom: 8,
+    marginVertical: 12,
   },
-  summaryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-    paddingHorizontal: 8,
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  timelineContainer: {
+    marginTop: 16,
   },
   timelineItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    paddingVertical: 8,
-  },
-  emotion: {
     fontSize: 16,
+    marginBottom: 8,
   },
-  count: {
+  errorText: {
     fontSize: 16,
-    fontWeight: '600',
-  },
-  time: {
-    fontSize: 14,
-    color: '#555',
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

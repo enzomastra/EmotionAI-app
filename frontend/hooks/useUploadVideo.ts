@@ -33,8 +33,8 @@ export const useUploadVideo = () => {
       router.push({
         pathname: '/results',
         params: {
-          summary: encodeURIComponent(JSON.stringify(data.emotion_summary)),
-          timeline: encodeURIComponent(JSON.stringify(data.timeline)),
+          summary: JSON.stringify(data.emotion_summary),
+          timeline: JSON.stringify(data.timeline),
         },
       });
     } catch (error: any) {
