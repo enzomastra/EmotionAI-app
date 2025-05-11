@@ -1,11 +1,21 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from app.services.api_client import analyze_video
+
 import os
+
 from app.schemas.video import VideoAnalysisResponse
 from fastapi.exceptions import HTTPException
 
+from app.database import Base, engine
+from app.models.clinic import Clinic
+from app.models.patient import Patient
+from app.models.therapy_session import TherapySession
+
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(title="EmotionAI Backend", version="1.0.0")
+
 
 @app.post("/video/analyze", response_model=VideoAnalysisResponse)
 async def analyze(file: UploadFile = File(...)):
