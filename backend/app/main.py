@@ -12,7 +12,7 @@ from app.models.clinic import Clinic
 from app.models.patient import Patient
 from app.models.therapy_session import TherapySession
 
-from app.routes import clinic, patient, therapy_session
+from app.routes import clinic, patient, therapy_session, analytics
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="EmotionAI Backend", version="1.0.0")
@@ -20,6 +20,7 @@ app = FastAPI(title="EmotionAI Backend", version="1.0.0")
 app.include_router(clinic.router)
 app.include_router(patient.router)
 app.include_router(therapy_session.router)
+app.include_router(analytics.router)
 
 
 @app.post("/video/analyze", response_model=VideoAnalysisResponse)

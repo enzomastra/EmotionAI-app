@@ -6,7 +6,7 @@ class Patient(Base):
     __tablename__ = "patients"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, index=True)
     age = Column(Integer, nullable=False)
     clinic_id = Column(Integer, ForeignKey("clinics.id"))
 

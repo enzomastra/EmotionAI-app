@@ -7,7 +7,7 @@ SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-print("Using SECRET_KEY:", SECRET_KEY)  # Para diagnóstico
+print("Using SECRET_KEY:", SECRET_KEY)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -25,15 +25,15 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    print("Token created with SECRET_KEY:", SECRET_KEY)  # Para diagnóstico
+    print("Token created with SECRET_KEY:", SECRET_KEY)
     return encoded_jwt
 
 def decode_access_token(token: str):
     try:
-        print("Attempting to decode token with SECRET_KEY:", SECRET_KEY)  # Para diagnóstico
+        print("Attempting to decode token with SECRET_KEY:", SECRET_KEY)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("Successfully decoded payload:", payload)  # Para diagnóstico
+        print("Successfully decoded payload:", payload)
         return payload
     except JWTError as e:
-        print("Error decoding token:", str(e))  # Para diagnóstico
+        print("Error decoding token:", str(e))
         return None
