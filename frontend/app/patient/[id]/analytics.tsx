@@ -1,33 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { BarChart, PieChart } from 'react-native-chart-kit';
 import { getPatientEmotionSummary, getPatientEmotionsBySession } from '@/services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 const screenWidth = Dimensions.get('window').width;
-
-const chartConfig = {
-  backgroundColor: '#ffffff',
-  backgroundGradientFrom: '#ffffff',
-  backgroundGradientTo: '#ffffff',
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  style: {
-    borderRadius: 16,
-  },
-};
-
-type EmotionType = 'happy' | 'sad' | 'angry' | 'surprised' | 'fearful' | 'disgusted' | 'neutral';
-
-const emotionColors: Record<EmotionType, string> = {
-  happy: '#FFD700',
-  sad: '#4169E1',
-  angry: '#FF4500',
-  surprised: '#9370DB',
-  fearful: '#808080',
-  disgusted: '#228B22',
-  neutral: '#A9A9A9',
-};
 
 interface EmotionSummary {
   emotion: string;
@@ -49,6 +26,7 @@ export default function PatientAnalytics() {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<EmotionSummary[]>([]);
   const [sessionData, setSessionData] = useState<AnalyticsData>({});
+  const [showCharts, setShowCharts] = useState(false);
 
   useEffect(() => {
     if (isNaN(patientId)) {
@@ -76,38 +54,24 @@ export default function PatientAnalytics() {
     }
   };
 
-  const preparePieChartData = (data: EmotionSummary[]) => {
-    if (!data || data.length === 0) return [];
-    
-    return data.map((item) => ({
-      name: item.emotion,
-      count: item.count,
-      color: emotionColors[item.emotion.toLowerCase() as EmotionType] || '#000000',
-      legendFontColor: '#7F7F7F',
-      legendFontSize: 12,
-    }));
-  };
+  const renderBarChart = (data: EmotionSummary[]) => {
+    const maxCount = Math.max(...data.map(item => item.count));
+    const barWidth = (screenWidth - 64) / data.length;
 
-  const prepareBarChartData = (sessionId: string) => {
-    const session = sessionData[sessionId];
-    if (!session || !session.emotions || session.emotions.length === 0) {
-      return {
-        labels: [],
-        datasets: [{ data: [] }]
-      };
-    }
-
-    const emotions = session.emotions.reduce((acc, curr) => {
-      acc[curr.emotion] = curr.count;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return {
-      labels: Object.keys(emotions),
-      datasets: [{
-        data: Object.values(emotions)
-      }]
-    };
+    return (
+      <View style={styles.chartContainer}>
+        {data.map((item, index) => {
+          const barHeight = (item.count / maxCount) * 200;
+          return (
+            <View key={index} style={styles.barContainer}>
+              <View style={[styles.bar, { height: barHeight }]} />
+              <Text style={styles.barLabel}>{item.emotion}</Text>
+              <Text style={styles.barValue}>{item.count}</Text>
+            </View>
+          );
+        })}
+      </View>
+    );
   };
 
   if (loading) {
@@ -118,54 +82,65 @@ export default function PatientAnalytics() {
     );
   }
 
-  const pieData = preparePieChartData(summary);
-
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Overall Emotion Distribution</Text>
-      {pieData.length > 0 ? (
-        <PieChart
-          data={pieData}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          accessor="count"
-          backgroundColor="transparent"
-          paddingLeft="15"
-          absolute
-        />
-      ) : (
-        <Text style={styles.noDataText}>No emotion data available</Text>
-      )}
+      <View style={styles.header}>
+        <Text style={styles.sectionTitle}>
+          {showCharts ? 'Emotion Charts' : 'Emotion Distribution'}
+        </Text>
+        <TouchableOpacity 
+          style={styles.toggleButton}
+          onPress={() => setShowCharts(!showCharts)}
+        >
+          <Ionicons 
+            name={showCharts ? "list" : "bar-chart"} 
+            size={24} 
+            color="#F05219" 
+          />
+        </TouchableOpacity>
+      </View>
 
-      <Text style={styles.title}>Emotions by Session</Text>
-      {Object.keys(sessionData).length > 0 ? (
-        Object.entries(sessionData).map(([sessionId, session]) => {
-          const barData = prepareBarChartData(sessionId);
-          if (barData.labels.length === 0) return null;
+      <View style={styles.section}>
+        {summary.length > 0 ? (
+          showCharts ? (
+            renderBarChart(summary)
+          ) : (
+            summary.map((item, index) => (
+              <View key={index} style={styles.emotionItem}>
+                <Text style={styles.emotionName}>{item.emotion}</Text>
+                <Text style={styles.emotionCount}>{item.count}</Text>
+              </View>
+            ))
+          )
+        ) : (
+          <Text style={styles.noDataText}>No emotion data available</Text>
+        )}
+      </View>
 
-          return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Emotions by Session</Text>
+        {Object.keys(sessionData).length > 0 ? (
+          Object.entries(sessionData).map(([sessionId, session]) => (
             <View key={sessionId} style={styles.sessionContainer}>
               <Text style={styles.sessionTitle}>
                 Session {sessionId} - {new Date(session.date).toLocaleDateString()}
               </Text>
-              <BarChart
-                data={barData}
-                width={screenWidth - 32}
-                height={220}
-                yAxisLabel=""
-                yAxisSuffix=""
-                chartConfig={chartConfig}
-                verticalLabelRotation={30}
-                showValuesOnTopOfBars
-                fromZero
-              />
+              {showCharts ? (
+                renderBarChart(session.emotions)
+              ) : (
+                session.emotions.map((emotion, index) => (
+                  <View key={index} style={styles.emotionItem}>
+                    <Text style={styles.emotionName}>{emotion.emotion}</Text>
+                    <Text style={styles.emotionCount}>{emotion.count}</Text>
+                  </View>
+                ))
+              )}
             </View>
-          );
-        })
-      ) : (
-        <Text style={styles.noDataText}>No session data available</Text>
-      )}
+          ))
+        ) : (
+          <Text style={styles.noDataText}>No session data available</Text>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -176,19 +151,50 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 16,
   },
-  title: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginVertical: 16,
-    textAlign: 'center',
+    marginBottom: 16,
+  },
+  toggleButton: {
+    padding: 8,
   },
   sessionContainer: {
-    marginVertical: 16,
+    marginBottom: 20,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 12,
   },
   sessionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 12,
+  },
+  emotionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
     marginBottom: 8,
+  },
+  emotionName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emotionCount: {
+    fontSize: 16,
+    color: '#666',
   },
   noDataText: {
     fontSize: 14,
@@ -196,5 +202,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     marginVertical: 20,
+  },
+  chartContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    height: 250,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  barContainer: {
+    alignItems: 'center',
+    width: 40,
+  },
+  bar: {
+    width: 20,
+    backgroundColor: '#F05219',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  barLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  barValue: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
 }); 
