@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from app.services.api_client import analyze_video
+from fastapi.middleware.cors import CORSMiddleware
 
 import os
 
@@ -12,14 +13,21 @@ from app.models.clinic import Clinic
 from app.models.patient import Patient
 from app.models.therapy_session import TherapySession
 
-from app.routes import clinic, patient, therapy_session, analytics
+from app.routes import clinic, patient, analytics
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="EmotionAI Backend", version="1.0.0")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(clinic.router)
 app.include_router(patient.router)
-app.include_router(therapy_session.router)
 app.include_router(analytics.router)
 
 

@@ -1,14 +1,16 @@
 import React from 'react';
 import { Stack } from 'expo-router';
-import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { AuthProvider } from '../contexts/AuthContext';
 import { Tabs } from 'expo-router';
 import { IconSymbol } from '../components/ui/IconSymbol';
-import { LoadingScreen } from '../components/LoadingScreen';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(app)" />
+      </Stack>
     </AuthProvider>
   );
 }

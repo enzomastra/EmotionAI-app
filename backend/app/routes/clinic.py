@@ -1,35 +1,38 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas.auth import ClinicRegister, Token, ClinicLogin
+from app.schemas.clinic import ClinicRegister, ClinicLogin, Token
 from app.models.clinic import Clinic
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.database import SessionLocal
+from app.routes.deps import get_db
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-@router.post("/register", response_model=Token)
-def register_clinic(clinic: ClinicRegister, db: Session = Depends(get_db)):
-    if db.query(Clinic).filter(Clinic.email == clinic.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    hashed_password = get_password_hash(clinic.password)
-    db_clinic = Clinic(name=clinic.name, email=clinic.email, hashed_password=hashed_password)
-    db.add(db_clinic)
-    db.commit()
-    db.refresh(db_clinic)
-    access_token = create_access_token(data={"sub": db_clinic.id})
-    return {"access_token": access_token, "token_type": "bearer"}
+router = APIRouter(prefix="/clinic", tags=["clinic"])
 
 @router.post("/login", response_model=Token)
-def login_clinic(credentials: ClinicLogin, db: Session = Depends(get_db)):
-    clinic = db.query(Clinic).filter(Clinic.email == credentials.email).first()
-    if not clinic or not verify_password(credentials.password, clinic.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
-    access_token = create_access_token(data={"sub": clinic.id})
+def login(request: ClinicLogin, db: Session = Depends(get_db)):
+    clinic = db.query(Clinic).filter(Clinic.email == request.email).first()
+    if not clinic or not verify_password(request.password, clinic.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token = create_access_token(data={"sub": clinic.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/register", response_model=Token)
+def register(request: ClinicRegister, db: Session = Depends(get_db)):
+    # Check if email already exists
+    if db.query(Clinic).filter(Clinic.email == request.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create new clinic
+    clinic = Clinic(
+        email=request.email,
+        password=get_password_hash(request.password),
+        name=request.name
+    )
+    db.add(clinic)
+    db.commit()
+    db.refresh(clinic)
+    
+    # Generate token
+    access_token = create_access_token(data={"sub": clinic.email})
     return {"access_token": access_token, "token_type": "bearer"}

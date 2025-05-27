@@ -6,8 +6,16 @@ class ClinicBase(BaseModel):
     name: str
     email: str
 
-class ClinicCreate(ClinicBase):
+class ClinicRegister(ClinicBase):
     password: str
+
+class ClinicLogin(BaseModel):
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 class ClinicResponse(ClinicBase):
     id: int
