@@ -47,17 +47,17 @@ export const createPatient = async (patientData: { name: string; age: number }) 
   return api.post('/patients/', patientData);
 };
 
-// Session endpoints
+// Therapy Session endpoints
 export const getPatientSessions = async (id: string | number) => {
-  return api.get(`/patients/${id}/sessions/`);
+  return api.get(`/patients/${id}/therapy-sessions/`);
 };
 
 export const getSessionDetails = async (patientId: string | number, sessionId: string | number) => {
-  return api.get(`/patients/${patientId}/sessions/${sessionId}/`);
+  return api.get(`/patients/${patientId}/therapy-sessions/${sessionId}/`);
 };
 
 export const analyzeAndSaveSession = async (patientId: string | number, formData: FormData) => {
-  return api.post(`/patients/${patientId}/sessions/analyze/`, formData, {
+  return api.post(`/patients/${patientId}/therapy-sessions/analyze/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };

@@ -68,7 +68,7 @@ export default function PatientDetailsScreen() {
   };
 
   const handleSessionPress = (sessionId: number) => {
-    router.push(`/patient/${patientId}/session/${sessionId}`);
+    router.push(`/patient/${patientId}/therapy-session/${sessionId}`);
   };
 
   const formatDate = (dateString: string) => {

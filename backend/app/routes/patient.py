@@ -27,9 +27,9 @@ def get_patient(patient_id: int, db: Session = Depends(get_db), clinic=Depends(g
         raise HTTPException(status_code=404, detail="Patient not found")
     return patient
 
-# Session endpoints
-@router.get("/{patient_id}/sessions", response_model=list[TherapySessionResponse])
-def get_patient_sessions(patient_id: int, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
+# Therapy Session endpoints
+@router.get("/{patient_id}/therapy-sessions", response_model=list[TherapySessionResponse])
+def get_patient_therapy_sessions(patient_id: int, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
     # Verify patient exists and belongs to clinic
     patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
     if not patient:
@@ -40,8 +40,8 @@ def get_patient_sessions(patient_id: int, db: Session = Depends(get_db), clinic=
     ).all()
     return sessions
 
-@router.get("/{patient_id}/sessions/{session_id}", response_model=TherapySessionResponse)
-def get_patient_session(patient_id: int, session_id: int, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
+@router.get("/{patient_id}/therapy-sessions/{session_id}", response_model=TherapySessionResponse)
+def get_patient_therapy_session(patient_id: int, session_id: int, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
     # Verify patient exists and belongs to clinic
     patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
     if not patient:
@@ -52,5 +52,6 @@ def get_patient_session(patient_id: int, session_id: int, db: Session = Depends(
         TherapySession.patient_id == patient_id
     ).first()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Therapy session not found")
+    
     return session
