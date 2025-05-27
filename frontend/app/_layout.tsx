@@ -1,7 +1,89 @@
+import React from 'react';
+import { Stack } from 'expo-router';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { Tabs } from 'expo-router';
 import { IconSymbol } from '../components/ui/IconSymbol';
+import { LoadingScreen } from '../components/LoadingScreen';
 
-export default function Layout() {
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
+  );
+}
+
+function RootLayoutNav() {
+  const { loading, isAuthenticated } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <Stack>
+      {!isAuthenticated ? (
+        // Auth screens
+        <>
+          <Stack.Screen
+            name="(auth)/login"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="(auth)/register"
+            options={{
+              headerShown: false,
+            }}
+          />
+        </>
+      ) : (
+        // App screens
+        <>
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="patient/[id]"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="patient/[id]/session/[sessionId]"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="patient/[id]/analytics"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="patient/[id]/new-session"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="patient/new"
+            options={{
+              headerShown: false,
+            }}
+          />
+        </>
+      )}
+    </Stack>
+  );
+}
+
+export function Layout() {
   return (
     <Tabs>
       {/* Pestaña de Inicio */}

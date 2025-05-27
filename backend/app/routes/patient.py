@@ -17,3 +17,10 @@ def create_patient(patient: PatientCreate, db: Session = Depends(get_db), clinic
 @router.get("/", response_model=list[PatientResponse])
 def list_patients(db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
     return db.query(Patient).filter(Patient.clinic_id == clinic.id).all()
+
+@router.get("/{patient_id}", response_model=PatientResponse)
+def get_patient(patient_id: int, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return patient
