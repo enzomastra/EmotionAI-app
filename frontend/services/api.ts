@@ -43,8 +43,12 @@ export const getPatientDetails = async (id: string | number) => {
   return api.get(`/patients/${id}/`);
 };
 
-export const createPatient = async (patientData: { name: string; age: number }) => {
+export const createPatient = async (patientData: { name: string; age: number; observations?: string }) => {
   return api.post('/patients/', patientData);
+};
+
+export const updatePatientObservations = async (patientId: number, observations: string) => {
+  return api.patch(`/patients/${patientId}/observations`, { observations });
 };
 
 // Therapy Session endpoints

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { getPatientDetails, getPatientSessions } from '@/services/api';
+import { getPatientDetails, getPatientSessions, updatePatientObservations } from '@/services/api';
 import { AppRoutes } from '@/app/types';
 
 interface Session {
@@ -15,6 +15,7 @@ interface Patient {
   id: number;
   name: string;
   age: number;
+  observations?: string;
 }
 
 export default function PatientDetailsScreen() {
@@ -24,6 +25,9 @@ export default function PatientDetailsScreen() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedObservations, setEditedObservations] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isNaN(patientId)) {
@@ -39,6 +43,7 @@ export default function PatientDetailsScreen() {
     try {
       const response = await getPatientDetails(patientId);
       setPatient(response.data);
+      setEditedObservations(response.data.observations || '');
     } catch (error: any) {
       console.error('Error loading patient details:', error);
       if (error.response?.status === 404) {
@@ -56,6 +61,21 @@ export default function PatientDetailsScreen() {
       console.error('Error loading sessions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveObservations = async () => {
+    if (!patient) return;
+    
+    setIsSaving(true);
+    try {
+      const response = await updatePatientObservations(patient.id, editedObservations);
+      setPatient(response.data);
+      setIsEditing(false);
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to update observations');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -89,6 +109,52 @@ export default function PatientDetailsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{patient?.name || 'Patient'}</Text>
         <Text style={styles.subtitle}>Age: {patient?.age || 'N/A'}</Text>
+        <View style={styles.observationsContainer}>
+          <View style={styles.observationsHeader}>
+            <Text style={styles.observationsTitle}>Observations:</Text>
+            <TouchableOpacity onPress={() => setIsEditing(true)}>
+              <FontAwesome name="edit" size={20} color="#F05219" />
+            </TouchableOpacity>
+          </View>
+          {isEditing ? (
+            <View style={styles.editContainer}>
+              <TextInput
+                style={styles.observationsInput}
+                value={editedObservations}
+                onChangeText={setEditedObservations}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+              <View style={styles.editActions}>
+                <TouchableOpacity 
+                  style={[styles.editButton, styles.cancelButton]} 
+                  onPress={() => {
+                    setIsEditing(false);
+                    setEditedObservations(patient?.observations || '');
+                  }}
+                >
+                  <Text style={styles.editButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.editButton, styles.saveButton]} 
+                  onPress={handleSaveObservations}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.editButtonText}>Save</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.observationsText}>
+              {patient?.observations || 'No observations yet'}
+            </Text>
+          )}
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -215,5 +281,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+  },
+  observationsContainer: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+  },
+  observationsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  observationsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  observationsText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  editContainer: {
+    gap: 10,
+  },
+  observationsInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  editButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#ddd',
+  },
+  saveButton: {
+    backgroundColor: '#F05219',
+  },
+  editButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 }); 

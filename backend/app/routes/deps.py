@@ -16,15 +16,14 @@ def get_db():
 
 def get_current_clinic(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     payload = decode_access_token(token)    
-    print("TOKEN:", token)
-    print("PAYLOAD:", payload)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid authentication")
-    try:
-        clinic_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=401, detail="Invalid clinic ID")
-    clinic = db.query(Clinic).filter(Clinic.id == clinic_id).first()
+    
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    
+    clinic = db.query(Clinic).filter(Clinic.email == email).first()
     if not clinic:
         raise HTTPException(status_code=401, detail="Clinic not found")
     return clinic

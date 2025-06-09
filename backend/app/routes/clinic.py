@@ -6,12 +6,12 @@ from app.core.auth import get_password_hash, verify_password, create_access_toke
 from app.database import SessionLocal
 from app.routes.deps import get_db
 
-router = APIRouter(prefix="/clinic", tags=["clinic"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=Token)
 def login(request: ClinicLogin, db: Session = Depends(get_db)):
     clinic = db.query(Clinic).filter(Clinic.email == request.email).first()
-    if not clinic or not verify_password(request.password, clinic.password):
+    if not clinic or not verify_password(request.password, clinic.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     access_token = create_access_token(data={"sub": clinic.email})
@@ -26,7 +26,7 @@ def register(request: ClinicRegister, db: Session = Depends(get_db)):
     # Create new clinic
     clinic = Clinic(
         email=request.email,
-        password=get_password_hash(request.password),
+        hashed_password=get_password_hash(request.password),
         name=request.name
     )
     db.add(clinic)

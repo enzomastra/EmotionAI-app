@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.patient import PatientCreate, PatientResponse
+from app.schemas.patient import PatientCreate, PatientResponse, PatientUpdate
 from app.schemas.therapy_session import TherapySessionResponse
 from app.models.patient import Patient
 from app.models.therapy_session import TherapySession
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/patients", tags=["patients"])
 
 @router.post("/", response_model=PatientResponse)
 def create_patient(patient: PatientCreate, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
-    db_patient = Patient(name=patient.name, age=patient.age, clinic_id=clinic.id)
+    db_patient = Patient(name=patient.name, age=patient.age, clinic_id=clinic.id, observations=patient.observations)
     db.add(db_patient)
     db.commit()
     db.refresh(db_patient)
@@ -25,6 +25,22 @@ def get_patient(patient_id: int, db: Session = Depends(get_db), clinic=Depends(g
     patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+    return patient
+
+@router.patch("/{patient_id}/observations", response_model=PatientResponse)
+def update_patient_observations(
+    patient_id: int,
+    patient_update: PatientUpdate,
+    db: Session = Depends(get_db),
+    clinic=Depends(get_current_clinic)
+):
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    patient.observations = patient_update.observations
+    db.commit()
+    db.refresh(patient)
     return patient
 
 # Therapy Session endpoints

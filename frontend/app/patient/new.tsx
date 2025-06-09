@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { createPatient } from '../../services/api';
 
 export default function NewPatientScreen() {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [observations, setObservations] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -29,7 +30,8 @@ export default function NewPatientScreen() {
     try {
       await createPatient({
         name: name.trim(),
-        age: parseInt(age)
+        age: parseInt(age),
+        observations: observations.trim()
       });
       router.back();
     } catch (error: any) {
@@ -43,7 +45,7 @@ export default function NewPatientScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>New Patient</Text>
       <View style={styles.form}>
         <TextInput
@@ -61,6 +63,16 @@ export default function NewPatientScreen() {
           keyboardType="numeric"
           editable={!loading}
         />
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          placeholder="Observations"
+          value={observations}
+          onChangeText={setObservations}
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+          editable={!loading}
+        />
         <TouchableOpacity 
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleSubmit}
@@ -73,7 +85,7 @@ export default function NewPatientScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -98,6 +110,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
+  },
+  textArea: {
+    height: 120,
+    paddingTop: 15,
   },
   button: {
     backgroundColor: '#F05219',
