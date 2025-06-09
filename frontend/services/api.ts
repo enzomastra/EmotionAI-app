@@ -60,6 +60,10 @@ export const getSessionDetails = async (patientId: string | number, sessionId: s
   return api.get(`/patients/${patientId}/therapy-sessions/${sessionId}/`);
 };
 
+export const updateSessionObservations = async (patientId: string | number, sessionId: string | number, observations: string) => {
+  return api.patch(`/patients/${patientId}/therapy-sessions/${sessionId}/observations`, { observations });
+};
+
 export const analyzeAndSaveSession = async (patientId: string | number, formData: FormData) => {
   return api.post(`/patients/${patientId}/therapy-sessions/analyze/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import json
 
 class TherapySessionBase(BaseModel):
@@ -10,10 +10,14 @@ class TherapySessionBase(BaseModel):
 class TherapySessionCreate(TherapySessionBase):
     pass
 
+class TherapySessionUpdate(BaseModel):
+    observations: Optional[str] = None
+
 class TherapySessionResponse(BaseModel):
     id: int
     date: datetime
     results: str
+    observations: Optional[str] = None
     patient_id: int
 
     class Config:

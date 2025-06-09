@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from datetime import datetime
-from app.schemas.therapy_session import TherapySessionCreate, TherapySessionResponse
+from app.schemas.therapy_session import TherapySessionCreate, TherapySessionResponse, TherapySessionUpdate
 from app.models.therapy_session import TherapySession
 from app.models.patient import Patient
 from app.routes.deps import get_db, get_current_clinic
 from app.services.api_client import analyze_video
 import os
 
-router = APIRouter(prefix="/patients/{patient_id}/sessions", tags=["sessions"])
+router = APIRouter(prefix="/patients/{patient_id}/therapy-sessions", tags=["sessions"])
 
 @router.post("/", response_model=TherapySessionResponse)
 def create_session(patient_id: int, session: TherapySessionCreate, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
@@ -45,3 +45,30 @@ async def analyze_and_save(patient_id: int, file: UploadFile = File(...), db: Se
     db.commit()
     db.refresh(db_session)
     return db_session
+
+@router.patch("/{session_id}/observations", response_model=TherapySessionResponse)
+def update_session_observations(
+    patient_id: int,
+    session_id: int,
+    session_update: TherapySessionUpdate,
+    db: Session = Depends(get_db),
+    clinic=Depends(get_current_clinic)
+):
+    # Verify patient exists and belongs to clinic
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Get the session and verify it belongs to the patient
+    session = db.query(TherapySession).filter(
+        TherapySession.id == session_id,
+        TherapySession.patient_id == patient_id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Therapy session not found")
+    
+    # Update observations
+    session.observations = session_update.observations
+    db.commit()
+    db.refresh(session)
+    return session
