@@ -65,18 +65,21 @@ export const updateSessionObservations = async (patientId: string | number, sess
 };
 
 export const analyzeAndSaveSession = async (patientId: string | number, formData: FormData) => {
-  return api.post(`/patients/${patientId}/therapy-sessions/analyze/`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  return api.post(`/patients/${patientId}/therapy-sessions/analyze`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    withCredentials: true,
   });
 };
 
 // Analytics endpoints
 export const getPatientEmotionSummary = async (patientId: string | number) => {
-  return api.get(`/analytics/patient/${patientId}/emotions/summary/`);
+  return api.get(`/analytics/patient/${patientId}/emotions/summary`);
 };
 
 export const getPatientEmotionsBySession = async (patientId: string | number) => {
-  return api.get(`/analytics/patient/${patientId}/emotions/by-session/`);
+  return api.get(`/analytics/patient/${patientId}/emotions/by-session`);
 };
 
 // Video analysis endpoint

@@ -32,8 +32,7 @@ export default function NewSessionScreen() {
       
       // Navigate to session details
       router.push({
-        pathname: `/patient/${id}/session/${response.data.id}`,
-        params: { results: JSON.stringify(response.data.results) }
+        pathname: `/patient/${id}/therapy-session/${response.data.id}`,
       });
     } catch (error: any) {
       console.error('Error:', error);

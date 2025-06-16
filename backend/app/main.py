@@ -9,11 +9,11 @@ from app.schemas.video import VideoAnalysisResponse
 from fastapi.exceptions import HTTPException
 
 from app.database import Base, engine
-from app.models.clinic import Clinic
+from app.models.user import User
 from app.models.patient import Patient
 from app.models.therapy_session import TherapySession
 
-from app.routes import clinic, patient, analytics, therapy_session
+from app.routes import user, patient, analytics, therapy_session
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="EmotionAI Backend", version="1.0.0")
@@ -26,7 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(clinic.router)
+app.include_router(user.router)
 app.include_router(patient.router)
 app.include_router(analytics.router)
 app.include_router(therapy_session.router)

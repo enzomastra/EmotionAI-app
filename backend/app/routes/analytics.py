@@ -6,7 +6,8 @@ import json
 from app.database import SessionLocal
 from app.models.therapy_session import TherapySession
 from app.models.patient import Patient
-from app.routes.deps import get_current_clinic, get_db
+from app.routes.deps import get_current_user, get_db
+from app.models.user import User
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -35,12 +36,12 @@ def parse_emotions_from_results(results_json: str) -> Dict[str, int]:
 def get_patient_emotion_summary(
     patient_id: int,
     db: Session = Depends(get_db),
-    current_clinic = Depends(get_current_clinic)
+    current_user: User = Depends(get_current_user)
 ):
     # Verify patient belongs to clinic
     patient = db.query(Patient).filter(
         Patient.id == patient_id,
-        Patient.clinic_id == current_clinic.id
+        Patient.user_id == current_user.id
     ).first()
     
     if not patient:
@@ -64,12 +65,12 @@ def get_patient_emotion_summary(
 def get_patient_emotions_by_session(
     patient_id: int,
     db: Session = Depends(get_db),
-    current_clinic = Depends(get_current_clinic)
+    current_user: User = Depends(get_current_user)
 ):
     # Verify patient belongs to clinic
     patient = db.query(Patient).filter(
         Patient.id == patient_id,
-        Patient.clinic_id == current_clinic.id
+        Patient.user_id == current_user.id
     ).first()
     
     if not patient:

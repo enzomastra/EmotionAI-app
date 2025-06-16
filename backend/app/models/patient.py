@@ -10,7 +10,12 @@ class Patient(Base):
     name = Column(String, index=True)
     age = Column(Integer, nullable=False)
     observations = Column(Text, nullable=True)
-    clinic_id = Column(Integer, ForeignKey("clinics.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
 
-    clinic = relationship("Clinic", back_populates="patients")
+    # Alias para compatibilidad con el schema
+    @property
+    def clinic_id(self):
+        return self.user_id
+
+    user = relationship("User", back_populates="patients")
     therapy_sessions = relationship("TherapySession", back_populates="patient")

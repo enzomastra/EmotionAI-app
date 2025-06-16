@@ -2,14 +2,14 @@ from pydantic import BaseModel
 from typing import List
 from app.schemas.patient import PatientResponse
 
-class ClinicBase(BaseModel):
+class UserBase(BaseModel):
     name: str
     email: str
 
-class ClinicRegister(ClinicBase):
+class UserRegister(UserBase):
     password: str
 
-class ClinicLogin(BaseModel):
+class UserLogin(BaseModel):
     email: str
     password: str
 
@@ -17,8 +17,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class ClinicResponse(ClinicBase):
+class UserResponse(UserBase):
     id: int
+    role: str
     patients: List["PatientResponse"] = []
 
     class Config:

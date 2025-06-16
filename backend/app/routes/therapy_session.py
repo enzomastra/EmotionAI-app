@@ -4,15 +4,16 @@ from datetime import datetime
 from app.schemas.therapy_session import TherapySessionCreate, TherapySessionResponse, TherapySessionUpdate
 from app.models.therapy_session import TherapySession
 from app.models.patient import Patient
-from app.routes.deps import get_db, get_current_clinic
+from app.models.user import User
+from app.routes.deps import get_db, get_current_user
 from app.services.api_client import analyze_video
 import os
 
 router = APIRouter(prefix="/patients/{patient_id}/therapy-sessions", tags=["sessions"])
 
 @router.post("/", response_model=TherapySessionResponse)
-def create_session(patient_id: int, session: TherapySessionCreate, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
-    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
+def create_session(patient_id: int, session: TherapySessionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.user_id == current_user.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     db_session = TherapySession(date=session.date, results=session.results, patient_id=patient.id)
@@ -22,15 +23,15 @@ def create_session(patient_id: int, session: TherapySessionCreate, db: Session =
     return db_session
 
 @router.get("/", response_model=list[TherapySessionResponse])
-def list_sessions(patient_id: int, db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
-    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
+def list_sessions(patient_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.user_id == current_user.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     return db.query(TherapySession).filter(TherapySession.patient_id == patient.id).all()
 
 @router.post("/analyze", response_model=TherapySessionResponse)
-async def analyze_and_save(patient_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), clinic=Depends(get_current_clinic)):
-    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
+async def analyze_and_save(patient_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.user_id == current_user.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     temp_dir = "./temp"
@@ -52,10 +53,10 @@ def update_session_observations(
     session_id: int,
     session_update: TherapySessionUpdate,
     db: Session = Depends(get_db),
-    clinic=Depends(get_current_clinic)
+    current_user: User = Depends(get_current_user)
 ):
     # Verify patient exists and belongs to clinic
-    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.clinic_id == clinic.id).first()
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.user_id == current_user.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     
