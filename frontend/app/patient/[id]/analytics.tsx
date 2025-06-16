@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { useLocalSearchParams } from 'expo-router';
 import { getPatientEmotionSummary, getPatientEmotionsBySession } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -84,6 +85,11 @@ export default function PatientAnalytics() {
 
   return (
     <ScrollView style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+          <Ionicons name="arrow-back" size={28} color="#F05219" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.header}>
         <Text style={styles.sectionTitle}>
           {showCharts ? 'Emotion Charts' : 'Emotion Distribution'}

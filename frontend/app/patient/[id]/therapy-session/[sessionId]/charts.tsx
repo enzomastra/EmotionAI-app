@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, TouchableOpacity, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { LineChart, PieChart } from 'react-native-chart-kit';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SessionChartsScreen() {
   const params = useLocalSearchParams();
@@ -37,6 +39,11 @@ export default function SessionChartsScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+          <Ionicons name="arrow-back" size={28} color="#F05219" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.chartContainer}>
         <LineChart
           data={timelineData}

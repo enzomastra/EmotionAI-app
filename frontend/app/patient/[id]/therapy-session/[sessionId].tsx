@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { getSessionDetails, updateSessionObservations } from '@/services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 interface SessionResults {
   timeline: {
@@ -94,6 +95,11 @@ export default function TherapySessionDetailsScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+          <Ionicons name="arrow-back" size={28} color="#F05219" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Observations</Text>
         {isEditing ? (

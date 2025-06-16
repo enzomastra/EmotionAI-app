@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } fr
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { analyzeAndSaveSession } from '../../../services/api';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function NewSessionScreen() {
   const { id } = useLocalSearchParams();
@@ -47,6 +49,11 @@ export default function NewSessionScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+          <Ionicons name="arrow-back" size={28} color="#F05219" />
+        </TouchableOpacity>
+      </View>
       <Text style={styles.title}>New Session</Text>
       <Text style={styles.subtitle}>
         Upload a video to analyze the patient's emotions during the session

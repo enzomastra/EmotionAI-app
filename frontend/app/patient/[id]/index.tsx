@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { getPatientDetails, getPatientSessions, updatePatientObservations } from '@/services/api';
 import { AppRoutes } from '@/app/types';
+import { router } from 'expo-router';
 
 interface Session {
   id: number;
@@ -106,6 +107,11 @@ export default function PatientDetailsScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+          <Ionicons name="arrow-back" size={28} color="#F05219" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.header}>
         <Text style={styles.title}>{patient?.name || 'Patient'}</Text>
         <Text style={styles.subtitle}>Age: {patient?.age || 'N/A'}</Text>
