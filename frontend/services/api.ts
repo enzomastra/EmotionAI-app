@@ -11,6 +11,15 @@ const api = axios.create({
   },
 });
 
+// Add token to requests
+api.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Add response interceptor
 api.interceptors.response.use(
   (response) => response,
@@ -26,39 +35,31 @@ api.interceptors.response.use(
 );
 
 // Auth endpoints
-export const login = async (credentials: { email: string; password: string }) => {
-  return api.post('/auth/login', credentials);
-};
+export const login = (email: string, password: string) =>
+  api.post('/auth/login', { email, password });
 
-export const register = async (data: { name: string; email: string; password: string }) => {
-  return api.post('/auth/register', data);
-};
+export const register = (name: string, email: string, password: string) =>
+  api.post('/auth/register', { name, email, password });
 
 // Patient endpoints
-export const getPatients = async () => {
-  return api.get('/patients/');
-};
+export const getPatients = () => api.get('/patients/');
 
 export const getPatientDetails = async (id: string | number) => {
   return api.get(`/patients/${id}/`);
 };
 
-export const createPatient = async (patientData: { name: string; age: number; observations?: string }) => {
-  return api.post('/patients/', patientData);
-};
+export const createPatient = (name: string, age: number, observations: string) =>
+  api.post('/patients/', { name, age, observations });
 
-export const updatePatientObservations = async (patientId: number, observations: string) => {
-  return api.patch(`/patients/${patientId}/observations`, { observations });
-};
+export const updatePatientObservations = (patientId: number, observations: string) =>
+  api.patch(`/patients/${patientId}/observations`, { observations });
 
 // Therapy Session endpoints
-export const getPatientSessions = async (id: string | number) => {
-  return api.get(`/patients/${id}/therapy-sessions/`);
-};
+export const getPatientSessions = (patientId: number) =>
+  api.get(`/patients/${patientId}/therapy-sessions`);
 
-export const getSessionDetails = async (patientId: string | number, sessionId: string | number) => {
-  return api.get(`/patients/${patientId}/therapy-sessions/${sessionId}/`);
-};
+export const getSessionDetails = (patientId: number, sessionId: number) =>
+  api.get(`/patients/${patientId}/therapy-sessions/${sessionId}`);
 
 export const updateSessionObservations = async (patientId: string | number, sessionId: string | number, observations: string) => {
   return api.patch(`/patients/${patientId}/therapy-sessions/${sessionId}/observations`, { observations });
@@ -82,11 +83,41 @@ export const getPatientEmotionsBySession = async (patientId: string | number) =>
   return api.get(`/analytics/patient/${patientId}/emotions/by-session`);
 };
 
-// Video analysis endpoint
-export const analyzeVideo = async (formData: FormData) => {
-  return api.post('/video/analyze/', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+// Video Analysis endpoint
+export const analyzeVideo = async (videoUri: string) => {
+  const formData = new FormData();
+  formData.append('file', {
+    uri: videoUri,
+    type: 'video/mp4',
+    name: 'video.mp4',
+  } as any);
+
+  return api.post('/video/analyze', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
+};
+
+// Agent endpoints
+export const getAgentChat = async (patientId: number, sessionIds?: number[]) => {
+  const params = new URLSearchParams();
+  if (sessionIds && sessionIds.length > 0) {
+    sessionIds.forEach(id => params.append('session_ids', id.toString()));
+  }
+  return api.get(`/chat/${patientId}${params.toString() ? `?${params.toString()}` : ''}`);
+};
+
+export const sendMessageToAgent = async (message: string, sessionIds?: string[], sessionEmotions?: any) => {
+  return api.post('/chat', {
+    message,
+    session_ids: sessionIds,
+    session_emotions: sessionEmotions
+  });
+};
+
+export const analyzePatientData = async (patientId: number, emotionData: any) => {
+  return api.post(`/analyze/${patientId}`, { emotion_data: emotionData });
 };
 
 export { api };

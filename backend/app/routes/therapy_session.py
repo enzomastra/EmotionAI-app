@@ -8,6 +8,7 @@ from app.models.user import User
 from app.routes.deps import get_db, get_current_user
 from app.services.api_client import analyze_video
 import os
+import json
 
 router = APIRouter(prefix="/patients/{patient_id}/therapy-sessions", tags=["sessions"])
 
@@ -41,7 +42,7 @@ async def analyze_and_save(patient_id: int, file: UploadFile = File(...), db: Se
         temp_file.write(await file.read())
     result = analyze_video(temp_file_path)
     os.remove(temp_file_path)
-    db_session = TherapySession(date=datetime.utcnow(), results=str(result), patient_id=patient.id)
+    db_session = TherapySession(date=datetime.utcnow(), results=json.dumps(result), patient_id=patient.id)
     db.add(db_session)
     db.commit()
     db.refresh(db_session)

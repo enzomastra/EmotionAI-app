@@ -1,97 +1,88 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { BarChart } from 'react-native-chart-kit';
-
-const screenWidth = Dimensions.get('window').width;
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, RefreshControl } from 'react-native';
+import PatientSessionSelector from '../../components/PatientSessionSelector';
+import ChatInterface from '../../components/ChatInterface';
 
 export default function ResultsScreen() {
-  const { summary, timeline } = useLocalSearchParams();
+  const [selectedPatient, setSelectedPatient] = useState<number | null>(null);
+  const [selectedSession, setSelectedSession] = useState<number | null>(null);
+  const [selectedPatientName, setSelectedPatientName] = useState<string>('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [key, setKey] = useState(0); // Clave para forzar el re-render
 
-  // Decodificar y procesar los parámetros
-  const parsedSummary = summary ? JSON.parse(summary as string) : null;
-  const parsedTimeline = timeline ? JSON.parse(timeline as string) : null;
+  // Función para refrescar la pantalla
+  const refreshScreen = () => {
+    setRefreshing(true);
+    setSelectedPatient(null);
+    setSelectedSession(null);
+    setSelectedPatientName('');
+    setKey(prev => prev + 1); // Incrementar la clave para forzar el re-render
+    setRefreshing(false);
+  };
 
-  if (!parsedSummary || !parsedTimeline) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>
-          No se pudieron cargar los resultados. Por favor, intenta nuevamente.
-        </Text>
-      </View>
-    );
-  }
+  // Refrescar cuando se monta el componente
+  useEffect(() => {
+    refreshScreen();
+  }, []);
 
-  // Datos para gráfico de barras
-  const barChartData = {
-    labels: Object.keys(parsedSummary),
-    datasets: [{ data: Object.values(parsedSummary) }],
+  const onRefresh = React.useCallback(() => {
+    refreshScreen();
+  }, []);
+
+  const handleSelect = (patientId: number, patientName: string, sessionId?: number) => {
+    setSelectedPatient(patientId);
+    setSelectedPatientName(patientName);
+    setSelectedSession(sessionId || null);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Resultados de la emoción</Text>
-
-      <Text style={styles.subtitle}>Resumen de emociones</Text>
-      <BarChart
-        data={barChartData}
-        width={screenWidth - 40}
-        height={220}
-        fromZero
-        chartConfig={{
-          backgroundColor: '#ffffff',
-          backgroundGradientFrom: '#ffffff',
-          backgroundGradientTo: '#ffffff',
-          decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(240, 82, 25, ${opacity})`,
-          labelColor: () => '#000',
-        }}
-        style={styles.chart}
-      />
-
-      <Text style={styles.subtitle}>Evolución emocional en el tiempo</Text>
-      <View style={styles.timelineContainer}>
-        {Object.entries(parsedTimeline).map(([time, emotion], index) => (
-          <Text key={index} style={styles.timelineItem}>
-            {time}s: {emotion}
-          </Text>
-        ))}
+    <View 
+      key={key} // Usar la clave para forzar el re-render
+      style={styles.container}
+    >
+      <View style={styles.content}>
+        <PatientSessionSelector
+          onSelect={handleSelect}
+          showSessionSelector={true}
+        />
+        
+        {selectedPatient ? (
+          <ChatInterface
+            key={`chat-${selectedPatient}-${selectedSession}`} // Forzar re-render del chat
+            patientId={selectedPatient}
+            patientName={selectedPatientName}
+          />
+        ) : (
+          <View style={styles.placeholderContainer}>
+            <Text style={styles.placeholderText}>
+              Selecciona un paciente para comenzar a chatear con el agente
+            </Text>
+          </View>
+        )}
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+    minHeight: 200,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 12,
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
-  },
-  timelineContainer: {
-    marginTop: 16,
-  },
-  timelineItem: {
+  placeholderText: {
     fontSize: 16,
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 16,
-    color: 'red',
+    color: '#666',
     textAlign: 'center',
-    marginTop: 20,
-  },
+  }
 });

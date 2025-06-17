@@ -19,16 +19,25 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await login({
-        email: email.trim(),
-        password: password.trim()
-      });
+      const response = await login(email.trim(), password.trim());
 
       const { access_token } = response.data;
       await signIn(access_token);
       router.replace('/(tabs)/patients');
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Invalid credentials');
+      let errorMessage = 'Invalid credentials';
+      if (error.response?.data) {
+        if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        } else if (Array.isArray(error.response.data.detail)) {
+          // Si detail es un array (ej. de errores de validación de FastAPI)
+          errorMessage = error.response.data.detail.map((err: any) => err.msg).join(', ');
+        } else if (error.response.data.message) {
+          // Si hay un campo 'message' directamente en la respuesta de error
+          errorMessage = error.response.data.message;
+        }
+      }
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

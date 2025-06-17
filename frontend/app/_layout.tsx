@@ -103,7 +103,7 @@ export function Layout() {
       <Tabs.Screen
         name="(tabs)/results"
         options={{
-          title: 'Resultados',
+          title: 'Agent',
           tabBarIcon: ({ color, size }) => (
             <IconSymbol name="paperplane.fill" color={color} size={size} />
           ),

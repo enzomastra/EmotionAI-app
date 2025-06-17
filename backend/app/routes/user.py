@@ -4,7 +4,7 @@ from app.schemas.user import UserRegister, UserLogin, Token, UserResponse
 from app.models.user import User
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.database import SessionLocal
-from app.routes.deps import get_db, get_admin_user
+from app.routes.deps import get_db, get_admin_user, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -14,7 +14,7 @@ def login(request: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    access_token = create_access_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/register", response_model=Token)
@@ -34,9 +34,17 @@ def register(request: UserRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     
-    # Generate token
-    access_token = create_access_token(data={"sub": user.email})
+    # Generate token with user ID
+    access_token = create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/logout")
+def logout(current_user: User = Depends(get_current_user)):
+    """
+    Endpoint para cerrar sesión.
+    En una implementación real, podríamos invalidar el token aquí.
+    """
+    return {"message": "Successfully logged out"}
 
 @router.get("/admin/dashboard")
 def admin_dashboard(current_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):

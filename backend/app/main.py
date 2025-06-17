@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from app.services.api_client import analyze_video
 from fastapi.middleware.cors import CORSMiddleware
+from app.services.agent_service import agent_service
 
 import os
 
@@ -13,7 +14,8 @@ from app.models.user import User
 from app.models.patient import Patient
 from app.models.therapy_session import TherapySession
 
-from app.routes import user, patient, analytics, therapy_session
+from app.routes import user, patient, analytics, therapy_session, agent
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="EmotionAI Backend", version="1.0.0")
@@ -30,7 +32,12 @@ app.include_router(user.router)
 app.include_router(patient.router)
 app.include_router(analytics.router)
 app.include_router(therapy_session.router)
+app.include_router(agent.router, prefix="", tags=["agent"])
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup when the application shuts down"""
+    await agent_service.close()
 
 @app.post("/video/analyze", response_model=VideoAnalysisResponse)
 async def analyze(file: UploadFile = File(...)):
