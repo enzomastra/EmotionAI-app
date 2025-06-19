@@ -36,7 +36,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="results"
+        name="agent"
         options={{
           title: 'Results',
           tabBarIcon: ({ color }) => <IconSymbol name="chart.bar.fill" color={color} />,

@@ -101,7 +101,7 @@ export function Layout() {
 
       {/* Pestaña de Resultados */}
       <Tabs.Screen
-        name="(tabs)/results"
+        name="(tabs)/agent"
         options={{
           title: 'Agent',
           tabBarIcon: ({ color, size }) => (
