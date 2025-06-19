@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas.user import UserRegister, UserLogin, Token, UserResponse
+from app.schemas.user import UserRegister, UserLogin, Token, UserResponse, UserUpdate
 from app.models.user import User
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.database import SessionLocal
@@ -64,3 +64,23 @@ def admin_dashboard(current_user: User = Depends(get_admin_user), db: Session = 
         "total_patients": total_patients,
         "clinic_users": [user.to_dict() for user in clinic_users]
     }
+
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    """
+    Obtener el perfil del usuario autenticado.
+    """
+    return current_user
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if update.name is not None:
+        current_user.name = update.name
+    if update.email is not None:
+        # Verificar que el email no esté en uso
+        if db.query(User).filter(User.email == update.email, User.id != current_user.id).first():
+            raise HTTPException(status_code=400, detail="Email already in use")
+        current_user.email = update.email
+    db.commit()
+    db.refresh(current_user)
+    return current_user

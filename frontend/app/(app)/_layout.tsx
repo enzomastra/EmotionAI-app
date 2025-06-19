@@ -43,10 +43,10 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="(tabs)/settings/preferences"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <IconSymbol name="gearshape.fill" color={color} />,
+          title: 'App Preferences',
+          headerShown: true,
         }}
       />
     </Tabs>
