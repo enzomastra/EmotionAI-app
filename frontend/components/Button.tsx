@@ -2,10 +2,11 @@ import { Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import React, { useRef } from 'react';
 import { BUTTON_RADIUS, SHADOW, FONT } from '../constants/DesignTokens';
 
-export default function Button({ title, onPress }: { title: string; onPress: () => void }) {
+export default function Button({ title, onPress, disabled = false, small = false }: { title: string; onPress: () => void; disabled?: boolean; small?: boolean }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
+    if (disabled) return;
     Animated.spring(scale, {
       toValue: 0.97,
       useNativeDriver: true,
@@ -15,6 +16,7 @@ export default function Button({ title, onPress }: { title: string; onPress: () 
   };
 
   const handlePressOut = () => {
+    if (disabled) return;
     Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
@@ -24,15 +26,16 @@ export default function Button({ title, onPress }: { title: string; onPress: () 
   };
 
   return (
-    <Animated.View style={[{ transform: [{ scale }] }, styles.shadow]}>
+    <Animated.View style={[{ transform: [{ scale }] }, styles.shadow, disabled && { opacity: 0.5 }]}>
       <TouchableOpacity
-        onPress={onPress}
+        onPress={disabled ? undefined : onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.85}
-        style={styles.button}
+        style={[styles.button, small && styles.buttonSmall, disabled && styles.buttonDisabled]}
+        disabled={disabled}
       >
-        <Text style={styles.text}>{title}</Text>
+        <Text style={[styles.text, small && styles.textSmall]}>{title}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -48,12 +51,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 52,
   },
+  buttonSmall: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    minHeight: 36,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
   text: {
     color: 'white',
     fontWeight: '600',
     fontSize: FONT.size.subtitle,
     letterSpacing: 0.2,
     fontFamily: FONT.bold,
+  },
+  textSmall: {
+    fontSize: 14,
   },
   shadow: {
     ...SHADOW,

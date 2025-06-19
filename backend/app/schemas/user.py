@@ -27,4 +27,5 @@ class UserResponse(UserBase):
 
 class UserUpdate(BaseModel):
     name: str | None = None
-    email: str | None = None
+    password: str | None = None
+    current_password: str | None = None

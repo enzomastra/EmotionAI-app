@@ -74,13 +74,15 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 @router.patch("/me", response_model=UserResponse)
 def update_me(update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    user = db.query(User).filter(User.id == current_user.id).first()
     if update.name is not None:
-        current_user.name = update.name
-    if update.email is not None:
-        # Verificar que el email no esté en uso
-        if db.query(User).filter(User.email == update.email, User.id != current_user.id).first():
-            raise HTTPException(status_code=400, detail="Email already in use")
-        current_user.email = update.email
+        user.name = update.name
+    # No permitir modificar el email
+    # Permitir modificar la contraseña si se provee
+    if update.password:
+        if not update.current_password or not verify_password(update.current_password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        user.hashed_password = get_password_hash(update.password)
     db.commit()
-    db.refresh(current_user)
-    return current_user
+    db.refresh(user)
+    return user

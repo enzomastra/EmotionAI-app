@@ -43,7 +43,7 @@ export const register = (name: string, email: string, password: string) =>
 
 export const getCurrentUser = () => api.get('/auth/me');
 
-export const updateCurrentUser = (data: { name?: string; email?: string }) => api.patch('/auth/me', data);
+export const updateCurrentUser = (data: { name?: string; password?: string; current_password?: string }) => api.patch('/auth/me', data);
 
 // Patient endpoints
 export const getPatients = () => api.get('/patients/');
