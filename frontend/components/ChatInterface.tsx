@@ -71,7 +71,7 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
       console.error('Error loading chat history:', error);
       setMessages([{
         role: 'agent',
-        content: 'Lo siento, hubo un error al cargar el historial del chat. Por favor, intenta de nuevo.',
+        content: 'Sorry, there was an error loading the chat history. Please try again.',
         timestamp: new Date().toISOString(),
       }]);
     } finally {
@@ -88,7 +88,7 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
       // Limpiar mensajes y mostrar mensaje de bienvenida
       setMessages([{
         role: 'agent',
-        content: 'Hola, estoy listo para analizar los datos históricos del paciente y proporcionar recomendaciones basadas en la información disponible. ¿Qué te gustaría saber?',
+        content: 'I am ready to analyze the patient\'s historical data and provide recommendations based on the available information. What would you like to know?',
         timestamp: new Date().toISOString(),
       }]);
     }
@@ -122,7 +122,7 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
       // Mostrar mensaje de bienvenida para sesiones seleccionadas
       setMessages([{
         role: 'agent',
-        content: `He seleccionado ${selectedSessions.length} sesiones para analizar. Estoy listo para proporcionar recomendaciones basadas en estas sesiones. ¿Qué te gustaría saber?`,
+        content: `I have selected ${selectedSessions.length} session(s) to analyze. I am ready to provide recommendations based on these sessions. What would you like to know?`,
         timestamp: new Date().toISOString(),
       }]);
     }
@@ -193,7 +193,7 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
       {chatContext && (
         <View style={styles.warningContainer}>
           <Text style={styles.warningText}>
-            ⚠️ Las respuestas del agente son recomendaciones y sugerencias basadas en el análisis de datos, no diagnósticos definitivos.
+            ⚠️ Agent responses are recommendations and suggestions based on data analysis, not definitive diagnoses.
           </Text>
         </View>
       )}

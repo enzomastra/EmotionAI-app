@@ -1,31 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, RefreshControl } from 'react-native';
+import { StyleSheet } from 'react-native';
 import PatientSessionSelector from '../../components/PatientSessionSelector';
 import ChatInterface from '../../components/ChatInterface';
+import { ThemedView } from '../../components/ThemedView';
+import { ThemedText } from '../../components/ThemedText';
 
-export default function ResultsScreen() {
+export default function AgentScreen() {
   const [selectedPatient, setSelectedPatient] = useState<number | null>(null);
   const [selectedSession, setSelectedSession] = useState<number | null>(null);
   const [selectedPatientName, setSelectedPatientName] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
-  const [key, setKey] = useState(0); // Clave para forzar el re-render
+  const [key, setKey] = useState(0);
 
-  // Función para refrescar la pantalla
   const refreshScreen = () => {
     setRefreshing(true);
     setSelectedPatient(null);
     setSelectedSession(null);
     setSelectedPatientName('');
-    setKey(prev => prev + 1); // Incrementar la clave para forzar el re-render
+    setKey(prev => prev + 1);
     setRefreshing(false);
   };
 
-  // Refrescar cuando se monta el componente
   useEffect(() => {
-    refreshScreen();
-  }, []);
-
-  const onRefresh = React.useCallback(() => {
     refreshScreen();
   }, []);
 
@@ -36,31 +32,25 @@ export default function ResultsScreen() {
   };
 
   return (
-    <View 
-      key={key} // Usar la clave para forzar el re-render
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <PatientSessionSelector
-          onSelect={handleSelect}
-          showSessionSelector={true}
-        />
-        
+    <ThemedView key={key} style={styles.container}>
+      <ThemedText type="title" style={styles.header}>Agent</ThemedText>
+      <ThemedView style={styles.content}>
+        <PatientSessionSelector onSelect={handleSelect} showSessionSelector={true} />
         {selectedPatient ? (
           <ChatInterface
-            key={`chat-${selectedPatient}-${selectedSession}`} // Forzar re-render del chat
+            key={`chat-${selectedPatient}-${selectedSession}`}
             patientId={selectedPatient}
             patientName={selectedPatientName}
           />
         ) : (
-          <View style={styles.placeholderContainer}>
-            <Text style={styles.placeholderText}>
-              Selecciona un paciente para comenzar a chatear con el agente
-            </Text>
-          </View>
+          <ThemedView variant="card" style={styles.placeholderContainer}>
+            <ThemedText type="subtitle" style={styles.placeholderText}>
+              Select a patient to start chatting with the agent
+            </ThemedText>
+          </ThemedView>
         )}
-      </View>
-    </View>
+      </ThemedView>
+    </ThemedView>
   );
 }
 
@@ -68,6 +58,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    paddingTop: 8,
+  },
+  header: {
+    marginBottom: 8,
+    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -81,8 +76,7 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   placeholderText: {
-    fontSize: 16,
-    color: '#666',
     textAlign: 'center',
-  }
+    color: '#687076',
+  },
 });
