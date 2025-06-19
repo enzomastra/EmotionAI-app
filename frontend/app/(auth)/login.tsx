@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { StyleSheet, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { ThemedView } from '../../components/ThemedView';
+import { ThemedText } from '../../components/ThemedText';
+import Button from '../../components/Button';
+import { CARD_RADIUS, FONT } from '../../constants/DesignTokens';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -20,7 +24,6 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await login(email.trim(), password.trim());
-
       const { access_token } = response.data;
       await signIn(access_token);
       router.replace('/(tabs)/patients');
@@ -44,9 +47,9 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>EmotionAI</Text>
-      <View style={styles.form}>
+    <ThemedView style={styles.container}>
+      <ThemedText type="title" style={styles.title}>EmotionAI</ThemedText>
+      <ThemedView variant="card" style={styles.card}>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -55,6 +58,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           editable={!loading}
+          placeholderTextColor="#B0B0B0"
         />
         <TextInput
           style={styles.input}
@@ -63,25 +67,15 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
           editable={!loading}
+          placeholderTextColor="#B0B0B0"
         />
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Logging in...' : 'Login'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.registerLink}
-          onPress={() => router.push('/register')}
-          disabled={loading}
-        >
-          <Text style={styles.registerText}>Don't have an account? Register</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+        <Button title={loading ? 'Logging in...' : 'Login'} onPress={handleLogin} />
+        <ThemedText type="secondary" style={styles.registerText} onPress={() => router.push('/register')}>
+          Don't have an account? <ThemedText type="link">Register</ThemedText>
+        </ThemedText>
+        {loading && <ActivityIndicator style={{ marginTop: 12 }} color="#F05219" />}
+      </ThemedView>
+    </ThemedView>
   );
 }
 
@@ -91,44 +85,34 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    textAlign: 'center',
+    marginBottom: 32,
     color: '#F05219',
+    textAlign: 'center',
   },
-  form: {
-    gap: 15,
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    paddingVertical: 36,
+    paddingHorizontal: 28,
+    gap: 18,
+    alignItems: 'stretch',
+    borderRadius: CARD_RADIUS,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#F05219',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  registerLink: {
-    marginTop: 15,
-    alignItems: 'center',
+    borderColor: '#ECECEC',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: FONT.size.body,
+    backgroundColor: '#FAFAFA',
+    marginBottom: 2,
+    fontFamily: FONT.regular,
   },
   registerText: {
-    color: '#F05219',
-    fontSize: 14,
+    marginTop: 10,
+    textAlign: 'center',
   },
 }); 
