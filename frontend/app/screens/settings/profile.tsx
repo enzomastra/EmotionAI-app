@@ -5,6 +5,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
 import { getCurrentUser, updateCurrentUser } from '../../../services/api';
 import { router } from 'expo-router';
+import { useThemeColor } from '../../../hooks/useThemeColor';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
@@ -19,6 +20,8 @@ export default function ProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
+  const background = useThemeColor({}, 'background');
+  const text = useThemeColor({}, 'text');
 
   useEffect(() => {
     getCurrentUser()
@@ -79,14 +82,15 @@ export default function ProfileScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <ThemedView style={styles.container}>
+        <ThemedView style={[styles.container, { backgroundColor: background }]}>
           <ThemedText type="title" style={styles.title}>Edit Profile</ThemedText>
           <ThemedText type="subtitle">Name</ThemedText>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: '#ECECEC', backgroundColor: background }]}
             value={name}
             onChangeText={setName}
             placeholder="Name"
+            placeholderTextColor={text + '99'}
             onFocus={() => setNameFocused(true)}
             onBlur={() => setNameFocused(false)}
           />
@@ -165,7 +169,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     padding: 24,
     gap: 16,
   },
@@ -183,7 +186,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    backgroundColor: '#FAFAFA',
     marginBottom: 12,
+  },
+  label: {
+    // color: '#222',
   },
 }); 

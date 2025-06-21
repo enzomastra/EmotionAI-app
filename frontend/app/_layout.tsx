@@ -3,15 +3,18 @@ import { Stack } from 'expo-router';
 import { AuthProvider } from '../contexts/AuthContext';
 import { Tabs } from 'expo-router';
 import { IconSymbol } from '../components/ui/IconSymbol';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(app)" />
-      </Stack>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+        </Stack>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

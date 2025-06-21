@@ -5,11 +5,14 @@ import { ThemedText } from '../../components/ThemedText';
 import Button from '../../components/Button';
 import { useRouter } from 'expo-router';
 import { getCurrentUser } from '../../services/api';
+import { useThemeColor } from '../../hooks/useThemeColor';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const background = useThemeColor({}, 'background');
+  const text = useThemeColor({}, 'text');
 
   useEffect(() => {
     getCurrentUser()
@@ -19,7 +22,7 @@ export default function SettingsScreen() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: background }]}>
       {/* Profile Section as clickable */}
       <TouchableOpacity onPress={() => router.push('/screens/settings/profile')}>
         <ThemedView variant="card" style={styles.cardClickable}>
@@ -29,7 +32,7 @@ export default function SettingsScreen() {
           ) : profile ? (
             <>
               <ThemedText type="subtitle" style={styles.profileName}>{profile.name}</ThemedText>
-              <ThemedText type="secondary" style={styles.profileEmail}>{profile.email}</ThemedText>
+              <ThemedText type="secondary" style={[styles.profileEmail, { color: text }]}>{profile.email}</ThemedText>
             </>
           ) : (
             <ThemedText type="secondary">Could not load profile</ThemedText>
@@ -47,7 +50,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     padding: 16,
     gap: 20,
   },
@@ -69,6 +71,5 @@ const styles = StyleSheet.create({
   },
   profileEmail: {
     marginBottom: 2,
-    color: '#687076',
   },
 });
