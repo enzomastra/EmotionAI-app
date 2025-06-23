@@ -28,11 +28,11 @@ export default function NewPatientScreen() {
 
     setLoading(true);
     try {
-      await createPatient({
-        name: name.trim(),
-        age: parseInt(age),
-        observations: observations.trim()
-      });
+      await createPatient(
+        name.trim(),
+        parseInt(age),
+        observations.trim()
+      );
       router.back();
     } catch (error: any) {
       Alert.alert(

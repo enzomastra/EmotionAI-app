@@ -1,15 +1,16 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.core.security import EncryptedString, EncryptedText
 
 class Patient(Base):
     __tablename__ = "patients"
 
     #agregar despues diagnostico y observaciones
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(EncryptedString, nullable=False)
     age = Column(Integer, nullable=False)
-    observations = Column(Text, nullable=True)
+    observations = Column(EncryptedText, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     # Alias para compatibilidad con el schema

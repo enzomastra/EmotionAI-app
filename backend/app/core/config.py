@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     AGENT_API_URL: str
+    ENCRYPTION_KEY: str
 
     class Config:
         env_file = ".env"

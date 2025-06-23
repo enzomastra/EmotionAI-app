@@ -112,12 +112,14 @@ export const getAgentChat = async (patientId: number, sessionIds?: number[]) => 
   return api.get(`/chat/${patientId}${params.toString() ? `?${params.toString()}` : ''}`);
 };
 
-export const sendMessageToAgent = async (message: string, sessionIds?: string[], sessionEmotions?: any) => {
-  return api.post('/chat', {
+export const sendMessageToAgent = async (message: string, sessionIds?: string[], sessionEmotions?: any, patientId?: number) => {
+  const body: any = {
     message,
     session_ids: sessionIds,
     session_emotions: sessionEmotions
-  });
+  };
+  if (patientId) body.patient_id = patientId;
+  return api.post('/chat', body);
 };
 
 export const analyzePatientData = async (patientId: number, emotionData: any) => {

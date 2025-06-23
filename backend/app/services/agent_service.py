@@ -33,20 +33,12 @@ class AgentService:
             print(f"[AgentService] Error: {str(e)}")
             raise
 
-    async def send_message(self, message: str, session_ids: Optional[List[str]] = None, session_emotions: Optional[Dict[str, Dict]] = None) -> Dict[str, Any]:
-        """Send a message to the agent with session emotions data"""
-        url = "/api/agent/chat"
-        
-        # Asegurarse de que los datos tienen el formato correcto
-        data = {
-            "message": str(message),  # Asegurar que es string
-            "session_ids": session_ids if session_ids else None,
-            "session_emotions": session_emotions if session_emotions else None
-        }
-        
+    async def send_message(self, message: str, therapist_id: int, patient_id: int, emotion_data: dict) -> Dict[str, Any]:
+        """Send a message to the agent with emotion data"""
+        url = f"/api/agent/chat?therapist_id={therapist_id}&patient_id={patient_id}"
+        data = {"emotion_data": emotion_data}
         print(f"[AgentService] Sending request to: {self.base_url}{url}")
         print(f"[AgentService] Request data: {data}")
-        
         try:
             response = await self.client.post(url, json=data)
             print(f"[AgentService] Response status: {response.status_code}")

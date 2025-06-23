@@ -133,20 +133,46 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
 
     try {
       setLoading(true);
-      const sessionIds = chatContext === 'session' && selectedSessions.length > 0 
+      let sessionIds = chatContext === 'session' && selectedSessions.length > 0 
         ? selectedSessions.map(id => id.toString())
         : undefined;
+      let emotionsToSend = sessionEmotions;
+      // Si es histórico, combinar todos los timelines y summaries
+      if (chatContext === 'historical') {
+        // Combinar todos los timelines y emotion_summary
+        let combinedTimeline: { [second: string]: string } = {};
+        let combinedSummary: { [emotion: string]: number } = {};
+        Object.values(parsedSessionResults).forEach((result: any) => {
+          if (result && result.timeline) {
+            Object.entries(result.timeline).forEach(([second, emotion]) => {
+              combinedTimeline[second as string] = emotion as string;
+            });
+          }
+          if (result && result.emotion_summary) {
+            Object.entries(result.emotion_summary).forEach(([emotion, count]) => {
+              combinedSummary[emotion as string] = (combinedSummary[emotion as string] || 0) + Number(count);
+            });
+          }
+        });
+        emotionsToSend = {
+          historical: {
+            timeline: combinedTimeline,
+            emotion_summary: combinedSummary
+          }
+        };
+        sessionIds = undefined; // No enviar sessionIds en histórico
+      }
       const response = await sendMessageToAgent(
         inputMessage,
         sessionIds,
-        sessionEmotions
+        emotionsToSend,
+        chatContext === 'historical' ? patientId : undefined
       );
-      
       const timestamp = new Date().toISOString();
       setMessages(prev => [
         ...prev,
         { role: 'user', content: inputMessage, timestamp },
-        { role: 'agent', content: response.data.message, timestamp }
+        { role: 'agent', content: response.data.recommendations, timestamp }
       ]);
       setInputMessage('');
     } catch (error) {

@@ -11,6 +11,7 @@ class AgentMessageRequest(BaseModel):
     message: str
     session_ids: Optional[List[str]] = None
     session_emotions: Optional[Dict[str, Dict]] = None
+    patient_id: Optional[int] = None
 
 @router.get("/chat/{patient_id}")
 async def get_chat_history(
@@ -40,12 +41,32 @@ async def send_message(
         print(f"Session IDs: {request.session_ids}")
         print(f"Session Emotions: {request.session_emotions}")
         print(f"Request dict: {request.dict()}")
-        
+
+        # Obtener therapist_id
+        therapist_id = current_user.id
+        # Obtener patient_id (preferir el campo explícito, si no, usar el primer session_id si está disponible)
+        patient_id = request.patient_id
+        if patient_id is None and request.session_ids:
+            try:
+                patient_id = int(request.session_ids[0])
+            except Exception:
+                raise HTTPException(status_code=400, detail="No se pudo determinar el patient_id")
+        if patient_id is None:
+            raise HTTPException(status_code=400, detail="Se requiere patient_id")
+
+        # Preparar datos emocionales (extraer el primer valor del dict si existe)
+        if request.session_emotions and isinstance(request.session_emotions, dict):
+            # Toma el primer valor del dict (de la sesión seleccionada)
+            emotion_data = next(iter(request.session_emotions.values()))
+        else:
+            emotion_data = {}
+
         # Enviar mensaje al agente
         response = await agent_service.send_message(
             message=request.message,
-            session_ids=request.session_ids,
-            session_emotions=request.session_emotions
+            therapist_id=therapist_id,
+            patient_id=patient_id,
+            emotion_data=emotion_data
         )
         print(f"[Agent Route] Agent response: {response}")
         return response
