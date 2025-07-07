@@ -20,6 +20,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <FontAwesome name="users" size={24} color={color} />
           ),
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -29,6 +30,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <FontAwesome name="paper-plane" size={24} color={color} />
           ),
+          headerShown: false,
         }}  
       />
       <Tabs.Screen

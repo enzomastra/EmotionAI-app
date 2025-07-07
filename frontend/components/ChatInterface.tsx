@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,46 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getPatientSessions, getAgentChat, sendMessageToAgent } from '@/services/api';
+import Markdown from 'react-native-markdown-display';
+
+const markdownStyles = {
+  body: {
+    color: '#333',
+    fontSize: 16,
+    fontFamily: 'Inter',
+  },
+  text: {
+    color: '#333',
+    fontSize: 16,
+    fontFamily: 'Inter',
+  },
+  heading2: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'Inter',
+    marginBottom: 6,
+  },
+  strong: {
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  bullet_list: {
+    marginVertical: 4,
+  },
+  bullet_list_icon: {
+    color: '#F79C65',
+  },
+  link: {
+    color: '#F79C65',
+    textDecorationLine: 'underline',
+  },
+  paragraph: {
+    marginBottom: 6,
+  },
+};
 
 interface ChatMessage {
   role: 'user' | 'agent';
@@ -22,9 +60,11 @@ interface ChatMessage {
 interface ChatInterfaceProps {
   patientId: number;
   patientName: string;
+  patientBubble?: ReactNode;
 }
 
-export default function ChatInterface({ patientId, patientName }: ChatInterfaceProps) {
+export default function ChatInterface({ patientId, patientName, patientBubble }: ChatInterfaceProps) {
+  const flatListRef = useRef<FlatList<any>>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -183,17 +223,27 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
     }
   };
 
-  const renderMessage = ({ item }: { item: ChatMessage }) => (
-    <View style={[
-      styles.messageContainer,
-      item.role === 'user' ? styles.userMessage : styles.agentMessage
-    ]}>
-      <Text style={styles.messageText}>{item.content}</Text>
-      <Text style={styles.timestamp}>
-        {new Date(item.timestamp).toLocaleTimeString()}
-      </Text>
-    </View>
-  );
+  const renderMessage = ({ item }: { item: ChatMessage & { sender?: 'user' | 'agent' } }) => {
+    const isAgent = (item.sender || item.role) === 'agent';
+    return (
+      <View style={[
+        styles.messageContainer,
+        isAgent ? styles.agentMessage : styles.userMessage
+      ]}>
+        {isAgent ? (
+          <Markdown
+            style={markdownStyles}
+            onError={() => null}
+          >
+            {item.content}
+          </Markdown>
+        ) : (
+          <Text style={styles.userMessageText}>{item.content}</Text>
+        )}
+        <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleTimeString()}</Text>
+      </View>
+    );
+  };
 
   const renderSessionItem = ({ item }: { item: any }) => (
     <TouchableOpacity
@@ -207,19 +257,18 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
         {new Date(item.date).toLocaleDateString()}
       </Text>
       {selectedSessions.includes(item.id) && (
-        <FontAwesome name="check" size={16} color="#F05219" />
+        <MaterialCommunityIcons name="check" size={16} color="#F05219" />
       )}
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chat with Agent ({patientName})</Text>
-
       {chatContext && (
-        <View style={styles.warningContainer}>
-          <Text style={styles.warningText}>
-            ⚠️ Agent responses are recommendations and suggestions based on data analysis, not definitive diagnoses.
+        <View style={styles.infoBanner}>
+          <MaterialCommunityIcons name="information" size={18} color="#F05219" style={{ marginRight: 8 }} />
+          <Text style={styles.infoBannerText}>
+            Agent responses are recommendations and suggestions based on data analysis, not definitive diagnoses.
           </Text>
         </View>
       )}
@@ -231,14 +280,14 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
             style={styles.contextButton}
             onPress={() => handleContextSelect('historical')}
           >
-            <FontAwesome name="history" size={20} color="#fff" />
+            <MaterialCommunityIcons name="history" size={20} color="#fff" />
             <Text style={styles.contextButtonText}>Historical Data</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.contextButton}
             onPress={() => handleContextSelect('session')}
           >
-            <FontAwesome name="calendar" size={20} color="#fff" />
+            <MaterialCommunityIcons name="calendar" size={20} color="#fff" />
             <Text style={styles.contextButtonText}>Specific Session</Text>
           </TouchableOpacity>
         </View>
@@ -266,24 +315,42 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
               renderItem={renderMessage}
               keyExtractor={(item, index) => index.toString()}
               contentContainerStyle={styles.messagesList}
+              ref={flatListRef}
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+              onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
             />
           )}
+          {loading && (
+            <View style={styles.typingContainer}>
+              <View style={styles.agentMessage}>
+                <View style={styles.typingDots}>
+                  <MaterialCommunityIcons name="dots-horizontal" size={32} color="#F79C65" />
+                </View>
+              </View>
+            </View>
+          )}
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={inputMessage}
-              onChangeText={setInputMessage}
-              placeholder="Type your message..."
-              multiline
-            />
-            <TouchableOpacity
-              style={styles.sendButton}
-              onPress={handleSendMessage}
-              disabled={!inputMessage.trim()}
-            >
-              <FontAwesome name="send" size={20} color="#fff" />
-            </TouchableOpacity>
+          <View style={styles.inputRow}>
+            <View style={styles.inputContainer}>
+              {patientBubble && (
+                <View style={styles.inputPatientBubble}>{patientBubble}</View>
+              )}
+              <TextInput
+                style={styles.input}
+                value={inputMessage}
+                onChangeText={setInputMessage}
+                placeholder="Type your message..."
+                placeholderTextColor="#bbb"
+                multiline
+              />
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={handleSendMessage}
+                disabled={!inputMessage.trim()}
+              >
+                <MaterialCommunityIcons name="send" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
         </>
       )}
@@ -302,7 +369,7 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
                 style={styles.closeButton}
                 onPress={handleSessionModalClose}
               >
-                <FontAwesome name="times" size={24} color="#666" />
+                <MaterialCommunityIcons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -327,7 +394,7 @@ export default function ChatInterface({ patientId, patientName }: ChatInterfaceP
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
     borderRadius: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -335,14 +402,16 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
     marginBottom: 8,
+    fontFamily: 'Inter',
   },
   title: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: 'bold',
     color: '#111',
-    marginBottom: 10,
+    marginBottom: 6,
     textAlign: 'center',
     letterSpacing: 0.2,
+    marginTop: 8,
   },
   contextSelector: {
     padding: 18,
@@ -412,76 +481,110 @@ const styles = StyleSheet.create({
   messagesList: {
     padding: 16,
     paddingBottom: 0,
+    paddingHorizontal: 12,
   },
   messageContainer: {
-    flexDirection: 'row',
-    marginVertical: 6,
-    paddingHorizontal: 4,
+    flexDirection: 'column',
+    marginVertical: 10,
+    paddingHorizontal: 8,
+    maxWidth: '100%',
   },
   userMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#111',
-    borderTopRightRadius: 18,
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 6,
-    padding: 14,
+    backgroundColor: '#E3E3E3',
+    borderRadius: 18,
+    padding: 16,
     marginLeft: 40,
     marginRight: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+    maxWidth: '85%',
   },
   agentMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fff',
-    borderTopRightRadius: 18,
-    borderTopLeftRadius: 18,
-    borderBottomRightRadius: 18,
-    borderBottomLeftRadius: 6,
-    padding: 14,
+    backgroundColor: '#FFF6F2',
+    borderRadius: 18,
+    padding: 16,
     marginRight: 40,
     marginLeft: 0,
-    borderWidth: 1.5,
-    borderColor: '#F05219',
-    shadowColor: '#F05219',
+    shadowColor: '#F79C65',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
     elevation: 2,
+    maxWidth: '85%',
   },
-  messageText: {
+  userMessageText: {
     color: '#222',
     fontSize: 16,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+  },
+  agentMessageText: {
+    color: '#F05219',
+    fontSize: 16,
+    fontFamily: 'Inter',
     fontWeight: '500',
   },
   timestamp: {
     fontSize: 12,
-    color: 'rgba(34,34,34,0.45)',
-    marginTop: 4,
-    marginLeft: 6,
+    color: '#bbb',
+    marginTop: 6,
+    textAlign: 'right',
+    marginRight: 2,
+    fontFamily: 'Inter',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 8,
+    paddingBottom: 16,
+    marginTop: 0,
+  },
+  inputPatientBubble: {
+    marginRight: 0,
+    marginBottom: 0,
+  },
+  patientBubbleButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#F05219',
+    marginRight: 8,
+    shadowColor: '#F05219',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f2f2f2',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
+    borderRadius: 28,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    flex: 1,
   },
   input: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    borderRadius: 18,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     marginRight: 8,
     maxHeight: 100,
@@ -612,5 +715,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F7F7F9',
+    borderLeftWidth: 4,
+    borderLeftColor: '#F05219',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    marginHorizontal: 8,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  infoBannerText: {
+    color: '#444',
+    fontSize: 13,
+    flex: 1,
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginLeft: 8,
+    marginBottom: 8,
+  },
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
 }); 
