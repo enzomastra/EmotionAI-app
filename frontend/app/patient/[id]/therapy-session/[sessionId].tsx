@@ -96,7 +96,7 @@ export default function TherapySessionDetailsScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+        <TouchableOpacity onPress={() => router.replace(`/patient/${patientId}`)} style={{ padding: 8 }}>
           <Ionicons name="arrow-back" size={28} color="#F05219" />
         </TouchableOpacity>
       </View>

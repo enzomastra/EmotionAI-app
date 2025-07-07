@@ -33,7 +33,9 @@ export default function AgentScreen() {
 
   return (
     <ThemedView key={key} style={styles.container}>
-      <ThemedText type="title" style={styles.header}>Agent</ThemedText>
+      <ThemedView style={styles.headerWrapper}>
+        <ThemedText type="title" style={styles.header}>Agent</ThemedText>
+      </ThemedView>
       <ThemedView style={styles.content}>
         <PatientSessionSelector onSelect={handleSelect} showSessionSelector={true} />
         {selectedPatient ? (
@@ -57,26 +59,61 @@ export default function AgentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    paddingTop: 8,
+    backgroundColor: '#fff',
+    paddingTop: 0,
+  },
+  headerWrapper: {
+    backgroundColor: '#fff',
+    paddingTop: 36,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 2,
   },
   header: {
-    marginBottom: 8,
+    marginBottom: 0,
     textAlign: 'center',
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#111',
+    letterSpacing: 0.5,
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: 0,
+    backgroundColor: '#FAFAFA',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   placeholderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    minHeight: 200,
+    padding: 24,
+    minHeight: 220,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
+    margin: 24,
   },
   placeholderText: {
     textAlign: 'center',
-    color: '#687076',
+    color: '#F05219',
+    fontWeight: '600',
+    fontSize: 18,
+    opacity: 0.85,
   },
 });

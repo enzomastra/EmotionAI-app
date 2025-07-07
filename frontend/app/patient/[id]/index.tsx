@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { getPatientDetails, getPatientSessions, updatePatientObservations } from '@/services/api';
 import { AppRoutes } from '@/app/types';
 import { router } from 'expo-router';
+import { useCallback } from 'react';
 
 interface Session {
   id: number;
@@ -39,6 +40,12 @@ export default function PatientDetailsScreen() {
     loadPatientDetails();
     loadSessions();
   }, [patientId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSessions();
+    }, [patientId])
+  );
 
   const loadPatientDetails = async () => {
     try {
@@ -108,7 +115,7 @@ export default function PatientDetailsScreen() {
   return (
     <View style={styles.container}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+        <TouchableOpacity onPress={() => router.replace('/patients')} style={{ padding: 8 }}>
           <Ionicons name="arrow-back" size={28} color="#F05219" />
         </TouchableOpacity>
       </View>

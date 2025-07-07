@@ -25,11 +25,11 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const response = await register({
-        name: name.trim(),
-        email: email.trim(),
-        password: password.trim()
-      });
+      const response = await register(
+        name.trim(),
+        email.trim(),
+        password.trim()
+      );
 
       const { access_token } = response.data;
       await signIn(access_token);
