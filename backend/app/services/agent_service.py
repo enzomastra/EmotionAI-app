@@ -35,8 +35,13 @@ class AgentService:
 
     async def send_message(self, message: str, therapist_id: int, patient_id: int, emotion_data: dict) -> Dict[str, Any]:
         """Send a message to the agent with emotion data"""
-        url = f"/api/agent/chat?therapist_id={therapist_id}&patient_id={patient_id}"
-        data = {"emotion_data": emotion_data}
+        url = f"/api/agent/chat"
+        data = {
+            "message": message,
+            "therapist_id": str(therapist_id),
+            "patient_id": str(patient_id),
+            "emotion_data": emotion_data
+        }
         print(f"[AgentService] Sending request to: {self.base_url}{url}")
         print(f"[AgentService] Request data: {data}")
         try:

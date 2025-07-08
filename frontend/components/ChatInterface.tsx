@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getPatientSessions, getAgentChat, sendMessageToAgent } from '@/services/api';
@@ -28,12 +30,12 @@ const markdownStyles = {
   heading2: {
     color: '#333',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Cambiado de '700' a 'bold'
     fontFamily: 'Inter',
     marginBottom: 6,
   },
   strong: {
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Cambiado de '700' a 'bold'
     color: '#333',
   },
   bullet_list: {
@@ -55,6 +57,7 @@ interface ChatMessage {
   role: 'user' | 'agent';
   content: string;
   timestamp: string;
+  isLoading?: boolean; // Added for loading messages
 }
 
 interface ChatInterfaceProps {
@@ -62,6 +65,45 @@ interface ChatInterfaceProps {
   patientName: string;
   patientBubble?: ReactNode;
 }
+
+// Componente animado para los tres puntitos "escribiendo"
+const TypingIndicator = () => {
+  const dot1 = useRef(new Animated.Value(0.3)).current;
+  const dot2 = useRef(new Animated.Value(0.3)).current;
+  const dot3 = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animate = () => {
+      Animated.sequence([
+        Animated.timing(dot1, { toValue: 1, duration: 300, useNativeDriver: true, easing: Easing.linear }),
+        Animated.timing(dot1, { toValue: 0.3, duration: 300, useNativeDriver: true, easing: Easing.linear }),
+      ]).start();
+      setTimeout(() => {
+        Animated.sequence([
+          Animated.timing(dot2, { toValue: 1, duration: 300, useNativeDriver: true, easing: Easing.linear }),
+          Animated.timing(dot2, { toValue: 0.3, duration: 300, useNativeDriver: true, easing: Easing.linear }),
+        ]).start();
+      }, 200);
+      setTimeout(() => {
+        Animated.sequence([
+          Animated.timing(dot3, { toValue: 1, duration: 300, useNativeDriver: true, easing: Easing.linear }),
+          Animated.timing(dot3, { toValue: 0.3, duration: 300, useNativeDriver: true, easing: Easing.linear }),
+        ]).start();
+      }, 400);
+    };
+    const interval = setInterval(animate, 900);
+    animate();
+    return () => clearInterval(interval);
+  }, [dot1, dot2, dot3]);
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', height: 24 }}>
+      <Animated.View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F79C65', margin: 2, opacity: dot1 }} />
+      <Animated.View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F79C65', margin: 2, opacity: dot2 }} />
+      <Animated.View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F79C65', margin: 2, opacity: dot3 }} />
+    </View>
+  );
+};
 
 export default function ChatInterface({ patientId, patientName, patientBubble }: ChatInterfaceProps) {
   const flatListRef = useRef<FlatList<any>>(null);
@@ -74,10 +116,18 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
   const [selectedSessions, setSelectedSessions] = useState<number[]>([]);
   const [chatContext, setChatContext] = useState<'historical' | 'session' | null>(null);
   const [sessionEmotions, setSessionEmotions] = useState<{ [sessionId: string]: any }>({});
+  const [shouldScrollToEnd, setShouldScrollToEnd] = useState(false); // Nuevo estado
 
   useEffect(() => {
     loadSessions();
   }, [patientId]);
+
+  useEffect(() => {
+    if (shouldScrollToEnd && flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+      setShouldScrollToEnd(false);
+    }
+  }, [messages, shouldScrollToEnd]);
 
   const loadSessions = async () => {
     try {
@@ -171,17 +221,24 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    const timestamp = new Date().toISOString();
+    const userMessage: ChatMessage = { role: 'user', content: inputMessage, timestamp };
+    const loadingMessage: ChatMessage = { role: 'agent', content: '...', timestamp, isLoading: true };
+
+    // Mostrar mensaje del usuario y loader inmediatamente
+    setMessages((prev: ChatMessage[]) => [...prev, userMessage, loadingMessage]);
+    setInputMessage('');
+    setLoading(true);
+    setShouldScrollToEnd(true); // Activar scroll solo cuando el usuario envía
+
     try {
-      setLoading(true);
       let sessionIds = chatContext === 'session' && selectedSessions.length > 0 
         ? selectedSessions.map(id => id.toString())
         : undefined;
       let emotionsToSend = sessionEmotions;
-      // Si es histórico, combinar todos los timelines y summaries
       if (chatContext === 'historical') {
-        // Combinar todos los timelines y emotion_summary
-        let combinedTimeline: { [second: string]: string } = {};
-        let combinedSummary: { [emotion: string]: number } = {};
+        let combinedTimeline: { [key: string]: string } = {};
+        let combinedSummary: { [key: string]: number } = {};
         Object.values(parsedSessionResults).forEach((result: any) => {
           if (result && result.timeline) {
             Object.entries(result.timeline).forEach(([second, emotion]) => {
@@ -200,7 +257,7 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
             emotion_summary: combinedSummary
           }
         };
-        sessionIds = undefined; // No enviar sessionIds en histórico
+        sessionIds = undefined;
       }
       const response = await sendMessageToAgent(
         inputMessage,
@@ -208,16 +265,32 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
         emotionsToSend,
         chatContext === 'historical' ? patientId : undefined
       );
-      const timestamp = new Date().toISOString();
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', content: inputMessage, timestamp },
-        { role: 'agent', content: response.data.recommendations, timestamp }
-      ]);
-      setInputMessage('');
+      // Reemplazar el mensaje loader por la respuesta real
+      setMessages((prev: ChatMessage[]) => {
+        const lastIndex = prev.findIndex(m => m.isLoading);
+        if (lastIndex !== -1) {
+          const newMessages = [...prev];
+          newMessages[lastIndex] = { role: 'agent', content: response.data.recommendations, timestamp } as ChatMessage;
+          return newMessages;
+        }
+        return [
+          ...prev,
+          { role: 'agent', content: response.data.recommendations, timestamp } as ChatMessage
+        ];
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message');
+      // Reemplazar el loader por un mensaje de error
+      setMessages((prev: ChatMessage[]) => {
+        const lastIndex = prev.findIndex(m => m.isLoading);
+        if (lastIndex !== -1) {
+          const newMessages = [...prev];
+          newMessages[lastIndex] = { role: 'agent', content: 'Error: failed to get response.', timestamp } as ChatMessage;
+          return newMessages;
+        }
+        return prev;
+      });
     } finally {
       setLoading(false);
     }
@@ -231,12 +304,16 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
         isAgent ? styles.agentMessage : styles.userMessage
       ]}>
         {isAgent ? (
-          <Markdown
-            style={markdownStyles}
-            onError={() => null}
-          >
-            {item.content}
-          </Markdown>
+          item.isLoading ? (
+            <TypingIndicator />
+          ) : (
+            <Markdown
+              style={markdownStyles}
+              onError={() => null}
+            >
+              {item.content}
+            </Markdown>
+          )
         ) : (
           <Text style={styles.userMessageText}>{item.content}</Text>
         )}
@@ -307,28 +384,16 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
             </View>
           )}
 
-          {loading ? (
-            <ActivityIndicator size="large" color="#F05219" style={styles.loader} />
-          ) : (
-            <FlatList
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={(item, index) => index.toString()}
-              contentContainerStyle={styles.messagesList}
-              ref={flatListRef}
-              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-              onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-            />
-          )}
-          {loading && (
-            <View style={styles.typingContainer}>
-              <View style={styles.agentMessage}>
-                <View style={styles.typingDots}>
-                  <MaterialCommunityIcons name="dots-horizontal" size={32} color="#F79C65" />
-                </View>
-              </View>
-            </View>
-          )}
+          {/* Mostrar siempre el historial de mensajes, el loader es un mensaje más */}
+          <FlatList
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item, index) => index.toString()}
+            contentContainerStyle={styles.messagesList}
+            ref={flatListRef}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
 
           <View style={styles.inputRow}>
             <View style={styles.inputContainer}>
