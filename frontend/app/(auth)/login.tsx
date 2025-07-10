@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../services/api';
@@ -7,13 +7,26 @@ import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import Button from '../../components/Button';
 import { CARD_RADIUS, FONT } from '../../constants/DesignTokens';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const router = useRouter();
   const { signIn } = useAuth();
+
+  useEffect(() => {
+    const checkSessionExpired = async () => {
+      const expired = await AsyncStorage.getItem('sessionExpired');
+      if (expired) {
+        setSessionExpired(true);
+        await AsyncStorage.removeItem('sessionExpired');
+      }
+    };
+    checkSessionExpired();
+  }, []);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -50,6 +63,11 @@ export default function LoginScreen() {
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.title}>EmotionAI</ThemedText>
       <ThemedView variant="card" style={styles.card}>
+        {sessionExpired && (
+          <ThemedText style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>
+            Session expired. You need to login again
+          </ThemedText>
+        )}
         <TextInput
           style={styles.input}
           placeholder="Email"

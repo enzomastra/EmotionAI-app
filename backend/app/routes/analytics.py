@@ -91,3 +91,33 @@ def get_patient_emotions_by_session(
         }
     
     return sessions_data 
+
+@router.get("/patient/{patient_id}/emotions/last-dominant")
+def get_patient_last_dominant_emotion(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Verificar que el paciente pertenece al usuario
+    patient = db.query(Patient).filter(
+        Patient.id == patient_id,
+        Patient.user_id == current_user.id
+    ).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Obtener la sesión más reciente
+    session = db.query(TherapySession).filter(
+        TherapySession.patient_id == patient_id
+    ).order_by(TherapySession.date.desc()).first()
+    if not session:
+        return {"dominant_emotion": None}
+
+    # Parsear emociones de la sesión
+    session_emotions = parse_emotions_from_results(session.results)
+    if not session_emotions:
+        return {"dominant_emotion": None}
+
+    # Buscar la emoción con mayor cantidad
+    dominant_emotion = max(session_emotions.items(), key=lambda x: x[1])[0]
+    return {"dominant_emotion": dominant_emotion} 

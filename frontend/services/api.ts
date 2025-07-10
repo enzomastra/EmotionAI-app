@@ -25,8 +25,9 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
+      // Clear token and set session expired flag
       await AsyncStorage.removeItem('token');
+      await AsyncStorage.setItem('sessionExpired', '1');
       delete api.defaults.headers.common['Authorization'];
       router.replace('/login');
     }
@@ -46,7 +47,15 @@ export const getCurrentUser = () => api.get('/auth/me');
 export const updateCurrentUser = (data: { name?: string; password?: string; current_password?: string }) => api.patch('/auth/me', data);
 
 // Patient endpoints
-export const getPatients = () => api.get('/patients/');
+export const getPatients = (params?: { name?: string; age?: number }) => {
+  if (params && (params.name || params.age)) {
+    const query = [];
+    if (params.name) query.push(`name=${encodeURIComponent(params.name)}`);
+    if (params.age) query.push(`age=${params.age}`);
+    return api.get(`/patients/?${query.join('&')}`);
+  }
+  return api.get('/patients/');
+};
 
 export const getPatientDetails = async (id: string | number) => {
   return api.get(`/patients/${id}/`);
@@ -85,6 +94,10 @@ export const getPatientEmotionSummary = async (patientId: string | number) => {
 
 export const getPatientEmotionsBySession = async (patientId: string | number) => {
   return api.get(`/analytics/patient/${patientId}/emotions/by-session`);
+};
+
+export const getPatientLastDominantEmotion = async (patientId: string | number) => {
+  return api.get(`/analytics/patient/${patientId}/emotions/last-dominant`);
 };
 
 // Video Analysis endpoint

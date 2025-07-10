@@ -9,6 +9,7 @@ class Patient(Base):
     #agregar despues diagnostico y observaciones
     id = Column(Integer, primary_key=True, index=True)
     name = Column(EncryptedString, nullable=False)
+    name_search = Column(String, nullable=False, index=True)
     age = Column(Integer, nullable=False)
     observations = Column(EncryptedText, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
