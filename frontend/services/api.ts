@@ -145,4 +145,13 @@ export const analyzePatientData = async (patientId: number, emotionData: any) =>
   return api.post(`/analyze/${patientId}`, { emotion_data: emotionData });
 };
 
+export const getPatientNotes = (patientId: number) =>
+  api.get(`/patients/${patientId}/notes`);
+
+export const createPatientNote = (patientId: number, text: string) =>
+  api.post(`/patients/${patientId}/notes`, { text });
+
+export const deletePatientNote = (patientId: number, noteId: number) =>
+  api.delete(`/patients/${patientId}/notes/${noteId}`);
+
 export { api };

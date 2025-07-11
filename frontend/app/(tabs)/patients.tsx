@@ -15,8 +15,8 @@ interface PatientWithEmotion extends Patient {
 }
 
 const FILTERS = [
-  { key: 'name', label: 'Buscar por nombre' },
-  { key: 'age', label: 'Buscar por edad' },
+  { key: 'name', label: 'Search by name' },
+  { key: 'age', label: 'Search by age' },
 ];
 
 export default function PatientsScreen() {
@@ -169,7 +169,7 @@ export default function PatientsScreen() {
         <Text style={styles.title}>Patients</Text>
         {gestionMode && (
           <TouchableOpacity onPress={handleExitGestionMode} style={styles.exitGestionButton}>
-            <Text style={styles.exitGestionText}>Salir</Text>
+            <Text style={styles.exitGestionText}>Exit</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -204,7 +204,7 @@ export default function PatientsScreen() {
             activeOpacity={0.8}
           >
             <FontAwesome name="sliders" size={18} color="#F05219" />
-            <Text style={styles.filterButtonText}>Filtros</Text>
+            <Text style={styles.filterButtonText}>Filters</Text>
           </TouchableOpacity>
           <Modal
             visible={showFilterModal}
@@ -248,7 +248,7 @@ export default function PatientsScreen() {
           contentContainerStyle={styles.list}
         />
       )}
-      {/* Botón flotante en la esquina inferior derecha */}
+      {/* Floating action button in bottom right corner */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={styles.addButton}
@@ -261,16 +261,16 @@ export default function PatientsScreen() {
           <View style={styles.fabMenu}>
             <TouchableOpacity style={styles.fabMenuItem} onPress={handleAddPatient}>
               <FontAwesome name="user-plus" size={18} color="#F05219" />
-              <Text style={styles.fabMenuText}>Añadir paciente</Text>
+              <Text style={styles.fabMenuText}>Add Patient</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.fabMenuItem} onPress={handleGestionMode}>
               <FontAwesome name="cogs" size={18} color="#F05219" />
-              <Text style={styles.fabMenuText}>Gestionar pacientes</Text>
+              <Text style={styles.fabMenuText}>Manage Patients</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
-      {/* Modal de confirmación de borrado */}
+      {/* Delete confirmation modal */}
       <Modal
         visible={deleteModal.visible}
         transparent
@@ -279,22 +279,22 @@ export default function PatientsScreen() {
       >
         <View style={styles.modalOverlayCenter}>
           <View style={styles.deleteModalBox}>
-            <Text style={styles.deleteModalTitle}>¿Eliminar paciente?</Text>
-            <Text style={styles.deleteModalText}>¿Seguro que deseas eliminar a {deleteModal.patientName}?</Text>
+            <Text style={styles.deleteModalTitle}>Delete patient?</Text>
+            <Text style={styles.deleteModalText}>Are you sure you want to delete {deleteModal.patientName}?</Text>
             <View style={styles.deleteModalActions}>
               <TouchableOpacity
                 style={styles.deleteModalCancel}
                 onPress={() => setDeleteModal({visible: false})}
                 disabled={deleting}
               >
-                <Text style={styles.deleteModalCancelText}>Cancelar</Text>
+                <Text style={styles.deleteModalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.deleteModalConfirm}
                 onPress={handleDeletePatient}
                 disabled={deleting}
               >
-                <Text style={styles.deleteModalConfirmText}>{deleting ? 'Eliminando...' : 'Eliminar'}</Text>
+                <Text style={styles.deleteModalConfirmText}>{deleting ? 'Deleting...' : 'Delete'}</Text>
               </TouchableOpacity>
             </View>
           </View>

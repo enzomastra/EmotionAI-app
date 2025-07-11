@@ -24,4 +24,10 @@ export type AppRouteParams<T extends keyof AppRoutes> = AppRoutes[T];
 export type AppRouteNavigation<T extends keyof AppRoutes> = {
   pathname: T;
   params: AppRouteParams<T>;
+};
+
+export type PatientNoteResponse = {
+  id: number;
+  text: string;
+  created_at: string;
 }; 

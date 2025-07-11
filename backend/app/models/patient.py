@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.core.security import EncryptedString, EncryptedText
+from .patient_note import PatientNote
 
 class Patient(Base):
     __tablename__ = "patients"
@@ -21,3 +22,4 @@ class Patient(Base):
 
     user = relationship("User", back_populates="patients")
     therapy_sessions = relationship("TherapySession", back_populates="patient")
+    notes = relationship("PatientNote", back_populates="patient", cascade="all, delete-orphan")
