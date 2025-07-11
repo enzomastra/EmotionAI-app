@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, Platform, Modal, Pressable } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { getPatients, getPatientLastDominantEmotion } from '../../services/api';
+import { getPatients, getPatientLastDominantEmotion, deletePatient } from '../../services/api';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface Patient {
@@ -28,6 +28,10 @@ export default function PatientsScreen() {
   const [searching, setSearching] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showFabMenu, setShowFabMenu] = useState(false);
+  const [gestionMode, setGestionMode] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{visible: boolean, patientId?: number, patientName?: string}>({visible: false});
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
 
   const loadPatients = async (params?: { name?: string; age?: number }) => {
@@ -49,7 +53,9 @@ export default function PatientsScreen() {
       setPatients(withEmotions);
     } catch (error: any) {
       console.error('Error loading patients:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to load patients');
+      if (error.response?.status !== 401) {
+        Alert.alert('Error', error.response?.data?.detail || 'Failed to load patients');
+      }
     } finally {
       setLoading(false);
     }
@@ -88,12 +94,35 @@ export default function PatientsScreen() {
     }, 0);
   };
 
+  const handleGestionMode = () => {
+    setGestionMode(true);
+    setShowFabMenu(false);
+  };
+
+  const handleExitGestionMode = () => {
+    setGestionMode(false);
+  };
+
+  const handleEditPatient = (patientId: number) => {
+    router.push(`/patient/new?id=${patientId}&edit=1`);
+  };
+
+  const handleDeletePatient = async () => {
+    if (!deleteModal.patientId) return;
+    setDeleting(true);
+    try {
+      await deletePatient(deleteModal.patientId);
+      setDeleteModal({visible: false});
+      loadPatients();
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to delete patient');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const renderPatient = ({ item }: { item: PatientWithEmotion }) => (
-    <TouchableOpacity
-      style={styles.patientCard}
-      onPress={() => handlePatientPress(item.id)}
-      activeOpacity={0.85}
-    >
+    <View style={styles.patientCard}>
       <View style={styles.iconContainer}>
         <MaterialCommunityIcons name="account-circle" size={38} color="#F05219" />
       </View>
@@ -109,8 +138,21 @@ export default function PatientsScreen() {
           </View>
         )}
       </View>
-      <FontAwesome name="chevron-right" size={22} color="#F05219" style={{ marginLeft: 8 }} />
-    </TouchableOpacity>
+      {gestionMode ? (
+        <View style={styles.gestionButtons}>
+          <TouchableOpacity style={styles.editButton} onPress={() => handleEditPatient(item.id)}>
+            <FontAwesome name="ellipsis-h" size={20} color="#888" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => setDeleteModal({visible: true, patientId: item.id, patientName: item.name})}>
+            <FontAwesome name="trash" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity onPress={() => handlePatientPress(item.id)}>
+          <FontAwesome name="chevron-right" size={22} color="#F05219" style={{ marginLeft: 8 }} />
+        </TouchableOpacity>
+      )}
+    </View>
   );
 
   if (loading) {
@@ -125,23 +167,11 @@ export default function PatientsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Patients</Text>
-        <View style={{ position: 'relative' }}>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddPatient}
-            onPressIn={() => setShowTooltip(true)}
-            onPressOut={() => setTimeout(() => setShowTooltip(false), 1200)}
-            activeOpacity={0.8}
-          >
-            <FontAwesome name="plus" size={22} color="#fff" />
+        {gestionMode && (
+          <TouchableOpacity onPress={handleExitGestionMode} style={styles.exitGestionButton}>
+            <Text style={styles.exitGestionText}>Salir</Text>
           </TouchableOpacity>
-          {showTooltip && (
-            <View style={styles.tooltipBubble}>
-              <Text style={styles.tooltipText}>Add Patient</Text>
-              <View style={styles.tooltipArrow} />
-            </View>
-          )}
-        </View>
+        )}
       </View>
       <View style={styles.searchRow}>
         <View style={styles.searchInputContainer}>
@@ -218,6 +248,58 @@ export default function PatientsScreen() {
           contentContainerStyle={styles.list}
         />
       )}
+      {/* Botón flotante en la esquina inferior derecha */}
+      <View style={styles.fabContainer}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setShowFabMenu((v) => !v)}
+          activeOpacity={0.8}
+        >
+          <FontAwesome name="plus" size={28} color="#fff" />
+        </TouchableOpacity>
+        {showFabMenu && (
+          <View style={styles.fabMenu}>
+            <TouchableOpacity style={styles.fabMenuItem} onPress={handleAddPatient}>
+              <FontAwesome name="user-plus" size={18} color="#F05219" />
+              <Text style={styles.fabMenuText}>Añadir paciente</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.fabMenuItem} onPress={handleGestionMode}>
+              <FontAwesome name="cogs" size={18} color="#F05219" />
+              <Text style={styles.fabMenuText}>Gestionar pacientes</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+      {/* Modal de confirmación de borrado */}
+      <Modal
+        visible={deleteModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModal({visible: false})}
+      >
+        <View style={styles.modalOverlayCenter}>
+          <View style={styles.deleteModalBox}>
+            <Text style={styles.deleteModalTitle}>¿Eliminar paciente?</Text>
+            <Text style={styles.deleteModalText}>¿Seguro que deseas eliminar a {deleteModal.patientName}?</Text>
+            <View style={styles.deleteModalActions}>
+              <TouchableOpacity
+                style={styles.deleteModalCancel}
+                onPress={() => setDeleteModal({visible: false})}
+                disabled={deleting}
+              >
+                <Text style={styles.deleteModalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteModalConfirm}
+                onPress={handleDeletePatient}
+                disabled={deleting}
+              >
+                <Text style={styles.deleteModalConfirmText}>{deleting ? 'Eliminando...' : 'Eliminar'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -251,16 +333,16 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#F05219',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#F05219',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tooltipBubble: {
     position: 'absolute',
@@ -544,5 +626,132 @@ const styles = StyleSheet.create({
     left: 0,
     top: 44,
     zIndex: 20,
+  },
+  fabContainer: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    zIndex: 20,
+    alignItems: 'center',
+  },
+  gestionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginLeft: 8,
+  },
+  editButton: {
+    backgroundColor: '#eee',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+  },
+  deleteButton: {
+    backgroundColor: '#F05219',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fabMenu: {
+    position: 'absolute',
+    bottom: 70,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 6,
+    zIndex: 30,
+  },
+  fabMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+  },
+  fabMenuText: {
+    marginLeft: 10,
+    color: '#F05219',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  exitGestionButton: {
+    marginLeft: 12,
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  exitGestionText: {
+    color: '#F05219',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 28,
+    minWidth: 260,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#F05219',
+    marginBottom: 10,
+  },
+  deleteModalText: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  deleteModalActions: {
+    flexDirection: 'row',
+    gap: 18,
+  },
+  deleteModalCancel: {
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  deleteModalCancelText: {
+    color: '#F05219',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  deleteModalConfirm: {
+    backgroundColor: '#F05219',
+    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  deleteModalConfirmText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 }); 

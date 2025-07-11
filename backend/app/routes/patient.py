@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from app.schemas.patient import PatientCreate, PatientResponse, PatientUpdate
 from app.schemas.therapy_session import TherapySessionResponse
@@ -48,21 +48,37 @@ def get_patient(patient_id: int, db: Session = Depends(get_db), current_user=Dep
         raise HTTPException(status_code=404, detail="Patient not found")
     return patient
 
-@router.patch("/{patient_id}/observations", response_model=PatientResponse)
-def update_patient_observations(
+@router.patch("/{patient_id}/", response_model=PatientResponse)
+def update_patient(
     patient_id: int,
-    patient_update: PatientUpdate,
+    name: str = Body(None),
+    age: int = Body(None),
+    observations: str = Body(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
     patient = db.query(Patient).filter(Patient.id == patient_id, Patient.user_id == current_user.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
-    
-    patient.observations = patient_update.observations
+    if name is not None:
+        patient.name = name
+        patient.name_search = normalize_name(name)
+    if age is not None:
+        patient.age = age
+    if observations is not None:
+        patient.observations = observations
     db.commit()
     db.refresh(patient)
     return patient
+
+@router.delete("/{patient_id}", status_code=204)
+def delete_patient(patient_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    patient = db.query(Patient).filter(Patient.id == patient_id, Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    db.delete(patient)
+    db.commit()
+    return None
 
 # Therapy Session endpoints
 @router.get("/{patient_id}/therapy-sessions", response_model=list[TherapySessionResponse])

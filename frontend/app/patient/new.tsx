@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { createPatient } from '../../services/api';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { getPatientDetails, createPatient, updatePatient } from '../../services/api';
 
 export default function NewPatientScreen() {
+  const params = useLocalSearchParams();
+  const patientId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const editMode = !!patientId;
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [observations, setObservations] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (editMode) {
+      setLoading(true);
+      getPatientDetails(patientId)
+        .then(res => {
+          setName(res.data.name);
+          setAge(res.data.age.toString());
+          setObservations(res.data.observations || '');
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [editMode, patientId]);
 
   const validateForm = () => {
     if (!name.trim()) {
@@ -25,19 +41,22 @@ export default function NewPatientScreen() {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     setLoading(true);
     try {
-      await createPatient(
-        name.trim(),
-        parseInt(age),
-        observations.trim()
-      );
+      if (editMode) {
+        await updatePatient(Number(patientId), name.trim(), parseInt(age), observations.trim());
+      } else {
+        await createPatient(
+          name.trim(),
+          parseInt(age),
+          observations.trim()
+        );
+      }
       router.back();
     } catch (error: any) {
       Alert.alert(
         'Error',
-        error.response?.data?.detail || 'Failed to create patient'
+        error.response?.data?.detail || (editMode ? 'Failed to update patient' : 'Failed to create patient')
       );
     } finally {
       setLoading(false);
@@ -46,7 +65,7 @@ export default function NewPatientScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>New Patient</Text>
+      <Text style={styles.title}>{editMode ? 'Edit Patient' : 'New Patient'}</Text>
       <View style={styles.form}>
         <TextInput
           style={styles.input}
@@ -81,7 +100,7 @@ export default function NewPatientScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Create Patient</Text>
+            <Text style={styles.buttonText}>{editMode ? 'Save Changes' : 'Create Patient'}</Text>
           )}
         </TouchableOpacity>
       </View>

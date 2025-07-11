@@ -58,7 +58,7 @@ export const getPatients = (params?: { name?: string; age?: number }) => {
 };
 
 export const getPatientDetails = async (id: string | number) => {
-  return api.get(`/patients/${id}/`);
+  return api.get(`/patients/${id}`);
 };
 
 export const createPatient = (name: string, age: number, observations: string) =>
@@ -66,6 +66,12 @@ export const createPatient = (name: string, age: number, observations: string) =
 
 export const updatePatientObservations = (patientId: number, observations: string) =>
   api.patch(`/patients/${patientId}/observations`, { observations });
+
+export const updatePatient = (patientId: number, name: string, age: number, observations: string) =>
+  api.patch(`/patients/${patientId}/`, { name, age, observations });
+
+export const deletePatient = (patientId: number) =>
+  api.delete(`/patients/${patientId}/`);
 
 // Therapy Session endpoints
 export const getPatientSessions = (patientId: number) =>
