@@ -70,16 +70,16 @@ function getEmotionSummary(results: any) {
     try {
       parsed = JSON.parse(results);
     } catch {
-      return 'Sin datos emocionales';
+      return 'No emotional data';
     }
   }
   if (parsed?.emotion_summary) {
     const summary = Object.entries(parsed.emotion_summary)
       .map(([emo, count]) => `${emo} (${count})`)
       .join(', ');
-    return `Emociones predominantes: ${summary}`;
+    return `Dominant emotions: ${summary}`;
   }
-  return 'Sin datos emocionales';
+  return 'No emotional data';
 }
 
 function formatShortDate(dateString: string) {
@@ -121,7 +121,7 @@ function SessionCard({ session, onAnalytics, onPress }) {
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
             <Text style={styles.sessionDateModern}>{formatShortDate(session.date)}</Text>
-            <Text style={styles.sessionSubtitle}>{emoji} Emoción predominante: {emotion}</Text>
+            <Text style={styles.sessionSubtitle}>{emoji} Dominant emotion: {emotion}</Text>
             {expanded && summary && (
               <View style={{ marginTop: 4 }}>
                 {Object.entries(summary).map(([emo, count]) => (
@@ -130,7 +130,7 @@ function SessionCard({ session, onAnalytics, onPress }) {
               </View>
             )}
             <TouchableOpacity onPress={() => setExpanded(e => !e)} style={styles.sessionExpandBtn} activeOpacity={0.7}>
-              <Text style={styles.sessionExpandText}>{expanded ? 'Ocultar detalles ▲' : 'Ver detalles ▼'}</Text>
+              <Text style={styles.sessionExpandText}>{expanded ? 'Hide details ▲' : 'Show details ▼'}</Text>
             </TouchableOpacity>
           </View>
           {/* Emoji grande */}
@@ -310,12 +310,12 @@ export default function PatientDetailsScreen() {
             </View>
             <View style={{ marginLeft: 16 }}>
               <Text style={styles.title}>{patient?.name || 'Patient'}</Text>
-              <Text style={styles.subtitle}>Edad: {patient?.age || 'N/A'}</Text>
+              <Text style={styles.subtitle}>Age: {patient?.age || 'N/A'}</Text>
             </View>
           </View>
           {lastSessionDate && (
             <Text style={styles.lastSessionText}>
-              Última sesión: {formatDate(lastSessionDate)}
+              Last session: {formatDate(lastSessionDate)}
             </Text>
           )}
         </View>
@@ -378,7 +378,7 @@ export default function PatientDetailsScreen() {
 
         {/* Lista de sesiones moderna */}
         <View style={{ marginTop: 24 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>Sesiones</Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Sessions</Text>
           {sessions.length === 0 ? (
             <Text>No sessions yet</Text>
           ) : (

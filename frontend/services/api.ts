@@ -65,7 +65,7 @@ export const createPatient = (name: string, age: number, observations: string) =
   api.post('/patients/', { name, age, observations });
 
 export const updatePatientObservations = (patientId: number, observations: string) =>
-  api.patch(`/patients/${patientId}/observations`, { observations });
+  api.patch(`/patients/${patientId}/`, { observations });
 
 export const updatePatient = (patientId: number, name: string, age: number, observations: string) =>
   api.patch(`/patients/${patientId}/`, { name, age, observations });
