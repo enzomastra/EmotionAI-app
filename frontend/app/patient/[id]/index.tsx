@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator, TextInput, Modal, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { getPatientDetails, getPatientSessions, updatePatientObservations, getPatientNotes, createPatientNote, deletePatientNote } from '@/services/api';
@@ -21,6 +21,134 @@ interface Patient {
   observations?: string;
 }
 
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
+}
+
+function getDominantEmotion(results: any) {
+  // results puede ser string JSON o objeto
+  let parsed = results;
+  if (typeof results === 'string') {
+    try {
+      parsed = JSON.parse(results);
+    } catch {
+      return { emotion: 'Neutral', color: '#FFC107', emoji: '😐' };
+    }
+  }
+  // Buscar emotion_summary o timeline
+  let emotion = 'Neutral';
+  let emoji = '😐';
+  let color = '#FFC107'; // Amarillo por defecto
+  if (parsed?.emotion_summary) {
+    const entries = Object.entries(parsed.emotion_summary);
+    if (entries.length > 0) {
+      entries.sort((a, b) => b[1] - a[1]);
+      emotion = entries[0][0];
+    }
+  }
+  // Asignar color y emoji según emoción
+  if (["Happy", "Surprised", "Excited", "Content"].includes(emotion)) {
+    color = '#4CAF50'; // Verde
+    emoji = '😊';
+  } else if (["Sad", "Angry", "Disgusted", "Fearful"].includes(emotion)) {
+    color = '#F44336'; // Rojo
+    emoji = '😔';
+  } else {
+    color = '#FFC107'; // Amarillo
+    emoji = '😐';
+  }
+  return { emotion, color, emoji };
+}
+
+function getEmotionSummary(results: any) {
+  let parsed = results;
+  if (typeof results === 'string') {
+    try {
+      parsed = JSON.parse(results);
+    } catch {
+      return 'Sin datos emocionales';
+    }
+  }
+  if (parsed?.emotion_summary) {
+    const summary = Object.entries(parsed.emotion_summary)
+      .map(([emo, count]) => `${emo} (${count})`)
+      .join(', ');
+    return `Emociones predominantes: ${summary}`;
+  }
+  return 'Sin datos emocionales';
+}
+
+function formatShortDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  }) + ' - ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function getDominantEmotionInfo(results: any) {
+  let parsed = results;
+  if (typeof results === 'string') {
+    try { parsed = JSON.parse(results); } catch { return { emotion: 'Neutral', color: '#FFC107', emoji: '😐', count: 0 }; }
+  }
+  let emotion = 'Neutral', emoji = '😐', color = '#FFC107', count = 0;
+  if (parsed?.emotion_summary) {
+    const entries = Object.entries(parsed.emotion_summary);
+    if (entries.length > 0) {
+      entries.sort((a, b) => b[1] - a[1]);
+      emotion = entries[0][0];
+      count = entries[0][1] as number;
+    }
+  }
+  if (["Happy", "Surprised", "Excited", "Content"].includes(emotion)) { color = '#4CAF50'; emoji = '🙂'; }
+  else if (["Sad", "Angry", "Disgusted", "Fearful"].includes(emotion)) { color = '#F44336'; emoji = '😔'; }
+  else { color = '#FFC107'; emoji = '😐'; }
+  return { emotion, color, emoji, count, summary: parsed?.emotion_summary };
+}
+
+function SessionCard({ session, onAnalytics, onPress }) {
+  const [expanded, setExpanded] = useState(false);
+  const { emotion, color, emoji, summary } = getDominantEmotionInfo(session.results);
+  return (
+    <View style={styles.sessionCardModern}>
+      {/* Barra/círculo de color */}
+      <View style={[styles.sessionColorBar, { backgroundColor: color }]} />
+      {/* Card clickeable excepto el icono de estadísticas */}
+      <TouchableOpacity style={{ flex: 1 }} activeOpacity={0.85} onPress={onPress}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sessionDateModern}>{formatShortDate(session.date)}</Text>
+            <Text style={styles.sessionSubtitle}>{emoji} Emoción predominante: {emotion}</Text>
+            {expanded && summary && (
+              <View style={{ marginTop: 4 }}>
+                {Object.entries(summary).map(([emo, count]) => (
+                  <Text key={emo} style={styles.sessionDetailText}>• {emo}: {count}</Text>
+                ))}
+              </View>
+            )}
+            <TouchableOpacity onPress={() => setExpanded(e => !e)} style={styles.sessionExpandBtn} activeOpacity={0.7}>
+              <Text style={styles.sessionExpandText}>{expanded ? 'Ocultar detalles ▲' : 'Ver detalles ▼'}</Text>
+            </TouchableOpacity>
+          </View>
+          {/* Emoji grande */}
+          <Text style={styles.sessionBigEmoji}>{emoji}</Text>
+        </View>
+      </TouchableOpacity>
+      {/* Ícono de gráfico */}
+      <TouchableOpacity
+        style={styles.sessionAnalyticsIcon}
+        onPress={onAnalytics}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontSize: 18 }}>📊</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function PatientDetailsScreen() {
   const params = useLocalSearchParams<AppRoutes['/patient/[id]']>();
   const patientId = Number(params.id);
@@ -38,6 +166,7 @@ export default function PatientDetailsScreen() {
   const [newNoteText, setNewNoteText] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isNaN(patientId)) {
@@ -71,11 +200,12 @@ export default function PatientDetailsScreen() {
   };
 
   const loadSessions = async () => {
+    setSessionsError(null);
     try {
       const response = await getPatientSessions(patientId);
       setSessions(response.data);
     } catch (error: any) {
-      console.error('Error loading sessions:', error);
+      setSessionsError(error?.message || 'Error loading sessions');
     } finally {
       setLoading(false);
     }
@@ -162,17 +292,36 @@ export default function PatientDetailsScreen() {
     );
   }
 
+  // Obtener fecha de última sesión
+  const lastSessionDate = sessions.length > 0 ? sessions[sessions.length - 1].date : null;
+
   return (
-    <View style={styles.container}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => router.replace('/patients')} style={{ padding: 8 }}>
+    <View style={{ flex: 1, backgroundColor: '#F6F6F6' }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+        {/* Botón de volver */}
+        <TouchableOpacity onPress={() => router.replace('/patients')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="#F05219" />
         </TouchableOpacity>
-      </View>
-      <View style={styles.header}>
-        <Text style={styles.title}>{patient?.name || 'Patient'}</Text>
-        <Text style={styles.subtitle}>Age: {patient?.age || 'N/A'}</Text>
-        <View style={styles.observationsContainer}>
+        {/* Encabezado del paciente */}
+        <View style={[styles.cardElevated, { marginTop: 8 }]}> 
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{getInitials(patient?.name || '')}</Text>
+            </View>
+            <View style={{ marginLeft: 16 }}>
+              <Text style={styles.title}>{patient?.name || 'Patient'}</Text>
+              <Text style={styles.subtitle}>Edad: {patient?.age || 'N/A'}</Text>
+            </View>
+          </View>
+          {lastSessionDate && (
+            <Text style={styles.lastSessionText}>
+              Última sesión: {formatDate(lastSessionDate)}
+            </Text>
+          )}
+        </View>
+
+        {/* Observaciones */}
+        <View style={[styles.cardElevated, { marginTop: 16 }]}> 
           <View style={styles.observationsHeader}>
             <Text style={styles.observationsTitle}>Observations:</Text>
             <TouchableOpacity onPress={() => setIsEditing(true)}>
@@ -204,38 +353,55 @@ export default function PatientDetailsScreen() {
                   onPress={handleSaveObservations}
                   disabled={isSaving}
                 >
-                  {isSaving ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.editButtonText}>Save</Text>
-                  )}
+                  <Text style={styles.editButtonText}>{isSaving ? 'Saving...' : 'Save'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
-            <Text style={styles.observationsText}>
-              {patient?.observations || 'No observations yet'}
-            </Text>
+            <Text style={styles.observationsText}>{patient?.observations || 'No observations yet'}</Text>
           )}
         </View>
-      </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.actionButton} onPress={handleViewAnalytics}>
-          <FontAwesome name="bar-chart" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>View Analytics</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => setShowNotesModal(true)}>
-          <FontAwesome name="sticky-note" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>Notes</Text>
-        </TouchableOpacity>
-      </View>
-      {/* FAB for New Session */}
-      <View style={styles.fabContainer}>
-        <TouchableOpacity style={styles.fabButton} onPress={handleNewSession}>
-          <FontAwesome name="video-camera" size={28} color="#fff" />
-        </TouchableOpacity>
-      </View>
+        {/* Botones de acción tipo pill */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 20 }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity style={styles.pillButton} onPress={handleViewAnalytics}>
+              <Ionicons name="bar-chart" size={20} color="#F05219" style={{ marginRight: 8 }} />
+              <Text style={styles.pillButtonText}>View Analytics</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.pillButton} onPress={() => setShowNotesModal(true)}>
+              <Ionicons name="chatbubble-ellipses-outline" size={20} color="#F05219" style={{ marginRight: 8 }} />
+              <Text style={styles.pillButtonText}>Notes</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* Lista de sesiones moderna */}
+        <View style={{ marginTop: 24 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>Sesiones</Text>
+          {sessions.length === 0 ? (
+            <Text>No sessions yet</Text>
+          ) : (
+            sessions.map((item, idx) => (
+              <SessionCard
+                key={item.id || idx}
+                session={item}
+                onAnalytics={() => handleSessionPress(item.id)}
+                onPress={() => handleSessionPress(item.id)}
+              />
+            ))
+          )}
+        </View>
+      </ScrollView>
+      {/* FAB para nueva sesión */}
+      <TouchableOpacity style={styles.fab} onPress={handleNewSession} activeOpacity={0.85}>
+        <View style={styles.fabInner}>
+          <Ionicons name="videocam" size={28} color="#fff" />
+          <View style={styles.fabPlus}>
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>+</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
       {/* Notes Modal */}
       <Modal
         visible={showNotesModal}
@@ -637,5 +803,255 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#F05219',
+  },
+  analyticsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F05219',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  analyticsButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginLeft: 8,
+  },
+  notesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F05219',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  notesButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginLeft: 8,
+  },
+  sessionItem: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sessionDate: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#F05219',
+  },
+  sessionResults: {
+    color: '#333',
+    marginTop: 2,
+  },
+  cardElevated: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  avatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F05219',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 22,
+  },
+  lastSessionText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  pillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE5D0',
+    borderRadius: 32,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginRight: 8,
+    shadowColor: '#F05219',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  pillButtonText: {
+    color: '#F05219',
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginLeft: 4,
+  },
+  sessionCard: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+    marginBottom: 8,
+    minHeight: 64,
+  },
+  sessionIndicator: {
+    width: 8,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
+    height: '100%',
+  },
+  sessionContent: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  sessionDate: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#F05219',
+  },
+  sessionSummary: {
+    color: '#333',
+    marginTop: 2,
+    fontSize: 14,
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  fabInner: {
+    backgroundColor: '#F05219',
+    borderRadius: 32,
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  fabPlus: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    backgroundColor: '#FF9800',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sessionCardModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+    minHeight: 64,
+    position: 'relative',
+  },
+  sessionColorBar: {
+    width: 8,
+    height: 40,
+    borderRadius: 8,
+    marginRight: 10,
+    alignSelf: 'flex-start',
+  },
+  sessionDateModern: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#F05219',
+  },
+  sessionSubtitle: {
+    color: '#333',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  sessionBigEmoji: {
+    fontSize: 32,
+    marginLeft: 12,
+    marginRight: 2,
+  },
+  sessionAnalyticsIcon: {
+    position: 'absolute',
+    right: 10,
+    bottom: 8,
+    backgroundColor: '#FFE5D0',
+    borderRadius: 16,
+    padding: 4,
+    elevation: 1,
+  },
+  sessionExpandBtn: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  sessionExpandText: {
+    color: '#F05219',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  sessionDetailText: {
+    color: '#666',
+    fontSize: 13,
+    marginLeft: 4,
   },
 }); 
