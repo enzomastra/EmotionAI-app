@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode, useRef } from 'react';
+import React, { useState, useEffect, ReactNode, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Text,
@@ -30,12 +30,12 @@ const markdownStyles = {
   heading2: {
     color: '#333',
     fontSize: 18,
-    fontWeight: 'bold', // Cambiado de '700' a 'bold'
+    fontWeight: 700,
     fontFamily: 'Inter',
     marginBottom: 6,
   },
   strong: {
-    fontWeight: 'bold', // Cambiado de '700' a 'bold'
+    fontWeight: 700,
     color: '#333',
   },
   bullet_list: {
@@ -105,7 +105,7 @@ const TypingIndicator = () => {
   );
 };
 
-export default function ChatInterface({ patientId, patientName, patientBubble }: ChatInterfaceProps) {
+const ChatInterface = forwardRef(function ChatInterface({ patientId, patientName, patientBubble }: ChatInterfaceProps, ref) {
   const flatListRef = useRef<FlatList<any>>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -128,6 +128,11 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
       setShouldScrollToEnd(false);
     }
   }, [messages, shouldScrollToEnd]);
+
+  // Permitir limpiar mensajes desde el padre
+  useImperativeHandle(ref, () => ({
+    clearMessages: () => setMessages([])
+  }));
 
   const loadSessions = async () => {
     try {
@@ -454,7 +459,9 @@ export default function ChatInterface({ patientId, patientName, patientBubble }:
       </Modal>
     </View>
   );
-}
+});
+
+export default ChatInterface;
 
 const styles = StyleSheet.create({
   container: {

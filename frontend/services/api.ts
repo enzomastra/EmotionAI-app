@@ -71,7 +71,7 @@ export const updatePatient = (patientId: number, name: string, age: number, obse
   api.patch(`/patients/${patientId}/`, { name, age, observations });
 
 export const deletePatient = (patientId: number) =>
-  api.delete(`/patients/${patientId}/`);
+  api.delete(`/patients/${patientId}`);
 
 // Therapy Session endpoints
 export const getPatientSessions = (patientId: number) =>

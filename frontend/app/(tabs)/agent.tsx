@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, TouchableOpacity, StyleSheet as RNStyleSheet, Modal, Text, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import PatientSessionSelector from '../../components/PatientSessionSelector';
 import ChatInterface from '../../components/ChatInterface';
@@ -27,6 +27,7 @@ export default function AgentScreen() {
   const [patients, setPatients] = useState<PatientWithEmotion[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const chatRef = useRef<any>(null);
 
   const router = useRouter();
 
@@ -74,7 +75,9 @@ export default function AgentScreen() {
   };
 
   const handleClearChat = () => {
-    setKey(prev => prev + 1);
+    if (chatRef.current && typeof chatRef.current.clearMessages === 'function') {
+      chatRef.current.clearMessages();
+    }
     setShowPatientMenu(false);
   };
 
@@ -141,6 +144,7 @@ export default function AgentScreen() {
       {selectedPatient && (
         <View style={{ flex: 1 }}>
           <ChatInterface
+            ref={chatRef}
             key={`chat-${selectedPatient}-${selectedSession}`}
             patientId={selectedPatient}
             patientName={selectedPatientName}

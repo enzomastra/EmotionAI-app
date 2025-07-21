@@ -7,7 +7,7 @@ class AgentService:
     def __init__(self):
         self.base_url = settings.AGENT_API_URL
         print(f"[AgentService] Initializing with base_url: {self.base_url}")
-        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0)
+        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
 
     async def get_chat_history(self, patient_id: int, session_ids: Optional[List[int]] = None) -> Dict[str, Any]:
         """Get chat history for a patient or specific sessions"""
