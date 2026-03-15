@@ -85,11 +85,33 @@ export const updateSessionObservations = async (patientId: string | number, sess
 };
 
 export const analyzeAndSaveSession = async (patientId: string | number, formData: FormData) => {
-  return api.post(`/patients/${patientId}/therapy-sessions/analyze`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    withCredentials: true,
+  const token = await AsyncStorage.getItem('token');
+  return new Promise<{ data: any }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${api.defaults.baseURL}/patients/${patientId}/therapy-sessions/analyze`);
+    
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    xhr.onload = () => {
+      try {
+        const responseData = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ data: responseData });
+        } else {
+          reject({ response: { status: xhr.status, data: responseData } });
+        }
+      } catch (e) {
+        reject({ response: { status: xhr.status, data: { detail: 'Failed to parse response' } } });
+      }
+    };
+
+    xhr.onerror = () => {
+      reject({ response: { status: 0, data: { detail: 'Network request failed' } } });
+    };
+
+    xhr.send(formData as any);
   });
 };
 
@@ -115,10 +137,33 @@ export const analyzeVideo = async (videoUri: string) => {
     name: 'video.mp4',
   } as any);
 
-  return api.post('/video/analyze', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+  const token = await AsyncStorage.getItem('token');
+  return new Promise<{ data: any }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${api.defaults.baseURL}/video/analyze`);
+    
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    xhr.onload = () => {
+      try {
+        const responseData = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ data: responseData });
+        } else {
+          reject({ response: { status: xhr.status, data: responseData } });
+        }
+      } catch (e) {
+        reject({ response: { status: xhr.status, data: { detail: 'Failed to parse response' } } });
+      }
+    };
+
+    xhr.onerror = () => {
+      reject({ response: { status: 0, data: { detail: 'Network request failed' } } });
+    };
+
+    xhr.send(formData as any);
   });
 };
 

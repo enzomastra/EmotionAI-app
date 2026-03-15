@@ -130,7 +130,8 @@ function emotionToY(emotion: string): number {
     'angry': 3,
     'neutral': 4,
     'fear': 5,
-    'disgust': 6
+    'disgust': 6,
+    'surprise': 7
   };
   return map[emotion] || 0;
 }
@@ -141,7 +142,8 @@ function emotionFromY(y: number): string {
     3: 'angry',
     4: 'neutral',
     5: 'fear',
-    6: 'disgust'
+    6: 'disgust',
+    7: 'surprise'
   };
   return map[y] || '';
 }
@@ -152,7 +154,8 @@ function getEmotionColor(emotion: string): string {
     'angry': '#FF4500', // orange-red
     'neutral': '#808080', // gray
     'fear': '#8e24aa', // violet
-    'disgust': '#43a047' // green
+    'disgust': '#43a047', // green
+    'surprise': '#00BCD4' // cyan
   };
   return colors[emotion] || '#000000';
 }
@@ -163,7 +166,8 @@ function getEmotionEmoji(emotion: string): string {
     'angry': '😠',
     'neutral': '😐',
     'fear': '😱',
-    'disgust': '🤢'
+    'disgust': '🤢',
+    'surprise': '😲'
   };
   return map[emotion] || '❓';
 }

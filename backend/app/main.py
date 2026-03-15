@@ -7,7 +7,7 @@ from app.services.agent_service import agent_service
 import os
 
 from app.schemas.video import VideoAnalysisResponse
-from fastapi.exceptions import HTTPException
+from fastapi.exceptions import HTTPException, RequestValidationError
 
 from app.database import Base, engine
 from app.models.user import User
@@ -19,6 +19,17 @@ from app.routes import user, patient, analytics, therapy_session, agent
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="EmotionAI Backend", version="1.0.0")
+
+# Global Exception handler to log validation errors (422)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    print(f"--- 422 Validation Error for {request.url.path} ---")
+    print(f"Errors: {exc.errors()}")
+    print("------------------------------------------------")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
 
 app.add_middleware(
     CORSMiddleware,

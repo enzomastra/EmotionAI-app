@@ -38,10 +38,21 @@ export default function NewSessionScreen() {
       });
     } catch (error: any) {
       console.error('Error:', error);
-      Alert.alert(
-        'Error',
-        error.response?.data?.detail || 'Failed to analyze video'
-      );
+      
+      let errorMessage = 'Failed to analyze video';
+      if (error.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          errorMessage = error.response.data.detail
+            .map((err: any) => `${err.loc?.join('.') || 'Error'}: ${err.msg}`)
+            .join('\n');
+        } else if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        } else {
+          errorMessage = JSON.stringify(error.response.data.detail);
+        }
+      }
+
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

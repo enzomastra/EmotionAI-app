@@ -106,12 +106,37 @@ export default function TherapySessionDetailsScreen() {
 
   function getEmotionInfo(emotion) {
     const e = emotion.toLowerCase();
-    if (["happy", "surprised", "excited", "content"].includes(e)) return { color: '#4CAF50', emoji: '🙂' };
-    if (["sad", "angry"].includes(e)) return { color: '#F44336', emoji: '😔' };
-    if (e === 'fear') return { color: '#F44336', emoji: '😨' };
-    if (e === 'disgust') return { color: '#F44336', emoji: '🤢' };
-    if (["neutral", "calm"].includes(e)) return { color: '#FFC107', emoji: '😐' };
-    return { color: '#BDBDBD', emoji: '❓' };
+    const colors: { [key: string]: string } = {
+      'happy': '#FFD700',    // yellow/gold
+      'excited': '#FFD700',
+      'content': '#FFD700',
+      'sad': '#4169E1',      // royal blue
+      'angry': '#FF4500',    // orange-red
+      'fear': '#8E24AA',     // violet
+      'disgust': '#43A047',  // green
+      'neutral': '#808080',  // gray
+      'calm': '#808080',
+      'surprise': '#00BCD4', // cyan
+      'surprised': '#00BCD4'
+    };
+
+    const emojis: { [key: string]: string } = {
+      'happy': '😊',
+      'excited': '😊',
+      'content': '😊',
+      'sad': '😢',
+      'angry': '😠',
+      'fear': '😱',
+      'disgust': '🤢',
+      'neutral': '😐',
+      'calm': '😐',
+      'surprise': '😲',
+      'surprised': '😲'
+    };
+
+    const color = colors[e] || '#BDBDBD';
+    const emoji = emojis[e] || '❓';
+    return { color, emoji };
   }
 
   function EmotionChip({ emotion, count }) {
