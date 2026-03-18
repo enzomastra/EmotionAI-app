@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'http://10.0.2.2:8001',
+  baseURL: 'http://147.93.185.119:8001',
   timeout: 120000,
   headers: {
     'Content-Type': 'application/json',

@@ -1,4 +1,4 @@
-{
+  {
   "expo": {
     "name": "EmotionAI-mobile",
     "slug": "EmotionAI-mobile",
@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
