@@ -9,7 +9,7 @@ import { getPatientDetails } from '@/services/api';
 export default function SessionChartsScreen() {
   const params = useLocalSearchParams();
   const results = JSON.parse(params.results as string);
-  const patientId = params.id;
+  const patientId = Number(params.id);
   const [patient, setPatient] = useState<{ name: string } | null>(null);
 
   useEffect(() => {
@@ -20,7 +20,16 @@ export default function SessionChartsScreen() {
 
   // Timeline data for line chart
   const timelineKeys = Object.keys(results.timeline);
-  const timelineLabels = timelineKeys.filter((_, i) => i % 5 === 0).map(t => `${t}s`); // show every 5th label
+  const maxLabels = 6;
+  const stepCount = Math.ceil(timelineKeys.length / maxLabels);
+  
+  const timelineLabels = timelineKeys.map((t, i) => {
+    if (i === 0 || i === timelineKeys.length - 1 || i % stepCount === 0) {
+      return `${t}s`;
+    }
+    return '';
+  });
+  
   const timelineData = {
     labels: timelineLabels,
     datasets: [
@@ -33,8 +42,8 @@ export default function SessionChartsScreen() {
   };
 
   // Pie/Donut chart data
-  const total = Object.values(results.emotion_summary).reduce((a, b) => a + b, 0);
-  const pieData = Object.entries(results.emotion_summary).map(([emotion, count]) => ({
+  const total = Object.values(results.emotion_summary as { [key: string]: number }).reduce((a: number, b: number) => a + b, 0);
+  const pieData = Object.entries(results.emotion_summary as { [key: string]: number }).map(([emotion, count]) => ({
     name: emotion,
     count: count,
     color: getEmotionColor(emotion),
@@ -56,7 +65,6 @@ export default function SessionChartsScreen() {
           <Text style={{ fontSize: 15, color: '#888', marginLeft: 16, marginTop: 2 }}>{patient.name}</Text>
         )}
       </View>
-      {/* Card: Line chart */}
       <View style={styles.chartCard}>
         <Text style={styles.cardTitle}>Emotional evolution during the session</Text>
         <LineChart
@@ -69,52 +77,69 @@ export default function SessionChartsScreen() {
             backgroundGradientTo: '#fff',
             decimalPlaces: 0,
             color: (opacity = 1) => `rgba(240, 82, 25, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(120,120,120,${opacity})`,
+            labelColor: (opacity = 1) => `rgba(100,100,100,${opacity})`,
             style: { borderRadius: 16 },
             propsForDots: {
-              r: '5',
-              strokeWidth: '2',
+              r: '3',
+              strokeWidth: '1.5',
               stroke: '#F05219',
             },
+            propsForBackgroundLines: {
+              strokeDasharray: '4 4',
+              stroke: 'rgba(0, 0, 0, 0.05)',
+              strokeWidth: 1,
+            },
           }}
-          bezier
-          withInnerLines={false}
+          withInnerLines={true}
           withOuterLines={false}
           segments={6}
-          formatYLabel={y => emotionFromY(Number(y))}
-          formatXLabel={(x, i) => (i % 2 === 0 ? x : '')}
-          style={styles.chart}
+          formatYLabel={y => emotionFromY(Math.round(Number(y)))}
+          style={{ marginVertical: 8, borderRadius: 16 }}
           getDotProps={(value, index) => ({
-            onPress: () => alert(`Time: ${timelineKeys[index]}s\nEmotion: ${emotionFromY(value)}`),
+            onPress: () => alert(`Time: ${timelineKeys[index]}s\nEmotion: ${emotionFromY(Math.round(Number(value)))}`),
           })}
         />
       </View>
       <View style={{ height: 18 }} />
-      {/* Card: Donut chart */}
       <View style={styles.chartCard}>
         <Text style={styles.cardTitle}>Emotional percentage distribution</Text>
         <PieChart
           data={pieData}
           width={Dimensions.get('window').width - 40}
-          height={220}
+          height={180}
           chartConfig={{
             color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
           }}
           accessor="count"
           backgroundColor="transparent"
-          paddingLeft="15"
+          paddingLeft={((Dimensions.get('window').width - 40) / 4).toString()} // Counteract legend bug
           center={[0, 0]}
           hasLegend={false}
           absolute
         />
-        {/* Leyenda custom con emoji y porcentaje */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, justifyContent: 'center' }}>
-          {pieData.map((item, idx) => (
-            <View key={item.name} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 8, marginBottom: 6 }}>
-              <Text style={{ fontSize: 18, marginRight: 4 }}>{item.emoji}</Text>
-              <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: item.color, marginRight: 4 }} />
-              <Text style={{ color: '#444', fontWeight: 'bold', marginRight: 2 }}>{item.percent}%</Text>
-              <Text style={{ color: '#888', fontSize: 13 }}>{capitalize(item.name)}</Text>
+        {/* Leyenda en formato Grid de Chips */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, justifyContent: 'flex-start', gap: 8 }}>
+          {pieData.map((item) => (
+            <View 
+              key={item.name} 
+              style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                backgroundColor: item.color + '1A', // 10% opacity
+                borderColor: item.color,
+                borderWidth: 1,
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                width: '31.5%', // 3 columns
+                justifyContent: 'center'
+              }}
+            >
+              <Text style={{ fontSize: 20, marginRight: 6 }}>{item.emoji}</Text>
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ color: '#222', fontWeight: 'bold', fontSize: 15 }}>{item.percent}%</Text>
+                <Text style={{ color: '#666', fontSize: 11, fontWeight: '600' }}>{capitalize(item.name)}</Text>
+              </View>
             </View>
           ))}
         </View>
@@ -149,15 +174,15 @@ function emotionFromY(y: number): string {
 }
 function getEmotionColor(emotion: string): string {
   const colors: { [key: string]: string } = {
-    'happy': '#FFD700', // yellow
-    'sad': '#4169E1', // blue
-    'angry': '#FF4500', // orange-red
-    'neutral': '#808080', // gray
-    'fear': '#8e24aa', // violet
-    'disgust': '#43a047', // green
-    'surprise': '#00BCD4' // cyan
+    'happy': '#FFD54F',    // Ámbar cálido
+    'sad': '#42A5F5',      // Azul moderno
+    'angry': '#EF5350',    // Rojo Coral
+    'neutral': '#B0BEC5',  // Gris Azulado
+    'fear': '#AB47BC',     // Púrpura
+    'disgust': '#66BB6A',  // Verde Esmeralda
+    'surprise': '#26C6DA'  // Cian
   };
-  return colors[emotion] || '#000000';
+  return colors[emotion] || '#B0BEC5';
 }
 function getEmotionEmoji(emotion: string): string {
   const map: { [key: string]: string } = {

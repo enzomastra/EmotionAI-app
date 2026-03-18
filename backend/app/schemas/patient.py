@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from app.schemas.therapy_session import TherapySessionResponse
-from .patient_note import PatientNoteResponse
+# Unused imports removed for performance and to avoid circular loading
 
 class PatientBase(BaseModel):
     name: str
@@ -16,9 +15,8 @@ class PatientUpdate(BaseModel):
 
 class PatientResponse(PatientBase):
     id: int
-    clinic_id: int
-    therapy_sessions: List[TherapySessionResponse] = []
-    notes: List[PatientNoteResponse] = []
+    clinic_id: Optional[int] = None
+    # therapy_sessions and notes removed for performance as they are loaded via dedicated endpoints
 
     class Config:
         from_attributes = True
